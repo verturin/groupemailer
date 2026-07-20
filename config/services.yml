@@ -1,0 +1,20 @@
+services:
+    verturin.groupemailer.listener:
+        class: verturin\groupemailer\event\listener
+        tags:
+            - { name: event.listener }
+
+    verturin.groupemailer.cron.task.send_queue:
+        class: verturin\groupemailer\cron\task\send_queue
+        arguments:
+            - '@config'
+            - '@dbal.conn'
+            - '@user'
+            - '@group_helper'
+            - '%core.table_prefix%'
+            - '%core.root_path%'
+            - '%core.php_ext%'
+        calls:
+            - [set_name, ['verturin.groupemailer.cron.task.send_queue']]
+        tags:
+            - { name: cron.task }

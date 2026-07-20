@@ -1,0 +1,59 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+<a id="maincontent"></a>
+
+<form id="acp_groupemailer_settings" method="post" action="{{ U_ACTION }}">
+
+	<fieldset>
+		<legend>{{ lang('ACP_GROUPEMAILER_SETTINGS') }}</legend>
+		<p>{{ lang('GROUPEMAILER_SETTINGS_EXPLAIN') }}</p>
+
+		<dl>
+			<dt><label for="groupemailer_default_rate_count">{{ lang('GROUPEMAILER_DEFAULT_RATE_COUNT') }}:</label></dt>
+			<dd><input type="number" id="groupemailer_default_rate_count" name="groupemailer_default_rate_count" value="{{ GROUPEMAILER_DEFAULT_RATE_COUNT }}" min="1" class="inputbox" style="width:80px;"></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_default_rate_interval">{{ lang('GROUPEMAILER_DEFAULT_RATE_INTERVAL') }}:</label></dt>
+			<dd><input type="number" id="groupemailer_default_rate_interval" name="groupemailer_default_rate_interval" value="{{ GROUPEMAILER_DEFAULT_RATE_INTERVAL }}" min="1" class="inputbox" style="width:80px;"></dd>
+			<dd><span>{{ lang('GROUPEMAILER_RATE_WARNING') }}</span></dd>
+		</dl>
+	</fieldset>
+
+	<fieldset>
+		<legend>{{ lang('GROUPEMAILER_SENDER_LEGEND') }}</legend>
+		<p>{{ lang('GROUPEMAILER_SENDER_EXPLAIN') }}</p>
+
+		<dl>
+			<dt><label for="groupemailer_from_name">{{ lang('GROUPEMAILER_FROM_NAME') }}:</label></dt>
+			<dd><input type="text" id="groupemailer_from_name" name="groupemailer_from_name" value="{{ GROUPEMAILER_FROM_NAME }}" class="inputbox"></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_from_email">{{ lang('GROUPEMAILER_FROM_EMAIL') }}:</label></dt>
+			<dd><input type="text" id="groupemailer_from_email" name="groupemailer_from_email" value="{{ GROUPEMAILER_FROM_EMAIL }}" class="inputbox"></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_header">{{ lang('GROUPEMAILER_HEADER') }}:</label></dt>
+			<dd><textarea id="groupemailer_header" name="groupemailer_header" rows="4" cols="60">{{ GROUPEMAILER_HEADER }}</textarea></dd>
+			<dd><span>{{ lang('GROUPEMAILER_HEADER_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_footer">{{ lang('GROUPEMAILER_FOOTER') }}:</label></dt>
+			<dd><textarea id="groupemailer_footer" name="groupemailer_footer" rows="4" cols="60">{{ GROUPEMAILER_FOOTER }}</textarea></dd>
+			<dd><span>{{ lang('GROUPEMAILER_FOOTER_EXPLAIN') }}</span></dd>
+		</dl>
+	</fieldset>
+
+	<p class="submit-buttons">
+		<input type="hidden" name="creation_time" value="{{ CREATION_TIME }}">
+		<input type="hidden" name="form_token" value="{{ FORM_TOKEN }}">
+		<input type="submit" name="submit" value="{{ lang('SUBMIT') }}" class="button1">
+	</p>
+
+</form>
+
+<!-- INCLUDE overall_footer.html -->

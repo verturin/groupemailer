@@ -1,0 +1,11 @@
+/* Group Mailer - ACP styles */
+
+#acp_groupemailer .table1 th,
+#acp_groupemailer_form dl dt {
+	vertical-align: top;
+}
+
+#acp_groupemailer_form textarea#body {
+	width: 100%;
+	max-width: 600px;
+}

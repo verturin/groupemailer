@@ -1,0 +1,28 @@
+{
+    "name": "verturin/groupemailer",
+    "type": "phpbb-extension",
+    "description": "Envoi de campagnes email par groupe(s) avec file d'attente pour respecter les limites d'envoi de l'hébergeur.",
+    "homepage": "https://cage-et-chastete.com",
+    "version": "2.7.1",
+    "time": "2026-07-16",
+    "license": "GPL-2.0-only",
+    "authors": [
+        {
+            "name": "Verturin"
+        }
+    ],
+    "require": {
+        "php": ">=7.1"
+    },
+    "extra": {
+        "display-name": "Group Mailer",
+        "soft-require": {
+            "phpbb/phpbb": ">=3.3.14,<3.4.0@dev"
+        },
+        "version-check": {
+            "host": "raw.githubusercontent.com",
+            "directory": "/verturin/groupemailer/master",
+            "filename": "version.json"
+        }
+    }
+}

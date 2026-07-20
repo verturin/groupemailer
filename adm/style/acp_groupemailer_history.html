@@ -1,0 +1,42 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+<a id="maincontent"></a>
+
+<fieldset>
+	<legend>{{ lang('ACP_GROUPEMAILER_HISTORY') }}</legend>
+	<p>{{ lang('GROUPEMAILER_TOTAL_SENT_LABEL') }}: <strong>{{ GROUPEMAILER_TOTAL_SENT }}</strong></p>
+
+	<table class="table1" cellspacing="1">
+		<thead>
+			<tr>
+				<th>{{ lang('GROUPEMAILER_SENT_DATE') }}</th>
+				<th>{{ lang('GROUPEMAILER_RECIPIENT') }}</th>
+				<th>{{ lang('GROUPEMAILER_TITLE') }}</th>
+				<th>{{ lang('GROUPEMAILER_SUBJECT') }}</th>
+				<th>{{ lang('GROUPEMAILER_TARGET_GROUPS') }}</th>
+				<th>{{ lang('GROUPEMAILER_RECIPIENTS') }}</th>
+				<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for entry in history %}
+			<tr{% if entry.S_ERROR %} class="row3"{% endif %}>
+				<td>{{ entry.SENT_TIME }}</td>
+				<td>{{ entry.RECIPIENT }}<br><span style="color:#888;">{{ entry.EMAIL }}</span></td>
+				<td>{{ entry.CAMPAIGN_TITLE }}</td>
+				<td>{{ entry.SUBJECT }}</td>
+				<td>{{ entry.GROUPS }}</td>
+				<td style="text-align:center;">{{ entry.TOTAL_RECIPIENTS }}</td>
+				<td>{{ entry.STATUS_LANG }}{% if entry.S_ERROR %}<br><span style="color:#a00;">{{ entry.ERROR_MESSAGE }}</span>{% endif %}</td>
+			</tr>
+		{% else %}
+			<tr>
+				<td colspan="7" style="text-align:center;">{{ lang('GROUPEMAILER_NO_HISTORY') }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</fieldset>
+
+<!-- INCLUDE overall_footer.html -->

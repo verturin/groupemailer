@@ -1,0 +1,67 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+<a id="maincontent"></a>
+
+<form id="acp_groupemailer" method="post" action="{{ U_ACTION }}">
+
+	<fieldset>
+		<legend>{{ lang('GROUPEMAILER_CAMPAIGN_LIST') }}</legend>
+
+		<table class="table1" cellspacing="1">
+			<thead>
+				<tr>
+					<th>{{ lang('GROUPEMAILER_TITLE') }}</th>
+					<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
+					<th>{{ lang('GROUPEMAILER_RECIPIENTS') }}</th>
+					<th>{{ lang('GROUPEMAILER_SENT') }}</th>
+					<th>{{ lang('GROUPEMAILER_ERRORS') }}</th>
+					<th>{{ lang('GROUPEMAILER_CREATED') }}</th>
+					<th>{{ lang('GROUPEMAILER_ACTIONS') }}</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for campaign in campaigns %}
+				<tr>
+					<td>
+						<strong>{{ campaign.TITLE }}</strong><br>
+						<span style="color:#888;">{{ campaign.SUBJECT }}</span><br>
+						<span style="color:#888;">{{ campaign.RATE }}</span>
+					</td>
+					<td>{{ campaign.STATUS_LANG }}</td>
+					<td style="text-align:center;">{{ campaign.TOTAL_RECIPIENTS }}</td>
+					<td style="text-align:center;">{{ campaign.SENT_COUNT }}</td>
+					<td style="text-align:center;">{{ campaign.ERROR_COUNT }}</td>
+					<td>{{ campaign.CREATED_TIME }}</td>
+					<td>
+						{% if campaign.S_DRAFT %}
+							<a href="{{ campaign.U_EDIT }}">{{ lang('GROUPEMAILER_EDIT') }}</a> |
+							<a href="{{ campaign.U_START }}">{{ lang('GROUPEMAILER_START') }}</a> |
+							<a href="{{ campaign.U_DELETE }}">{{ lang('GROUPEMAILER_DELETE') }}</a>
+						{% elseif campaign.S_RUNNING %}
+							<a href="{{ campaign.U_PAUSE }}">{{ lang('GROUPEMAILER_PAUSE') }}</a>
+						{% elseif campaign.S_PAUSED %}
+							<a href="{{ campaign.U_RESUME }}">{{ lang('GROUPEMAILER_RESUME') }}</a>
+						{% endif %}
+						{% if campaign.S_HAS_ERRORS %}
+							{% if not campaign.S_DRAFT %} | {% endif %}<a href="{{ campaign.U_RETRY }}">{{ lang('GROUPEMAILER_RETRY_ERRORS') }}</a>
+						{% endif %}
+						{% if not campaign.S_DRAFT and not campaign.S_RUNNING and not campaign.S_PAUSED and not campaign.S_HAS_ERRORS %}
+							&nbsp;
+						{% endif %}
+					</td>
+				</tr>
+			{% else %}
+				<tr>
+					<td colspan="7" style="text-align:center;">{{ lang('GROUPEMAILER_NO_CAMPAIGNS') }}</td>
+				</tr>
+			{% endfor %}
+			</tbody>
+		</table>
+	</fieldset>
+
+	<p><a class="button1" href="{{ U_ADD_CAMPAIGN }}">{{ lang('GROUPEMAILER_ADD_CAMPAIGN') }}</a></p>
+
+</form>
+
+<!-- INCLUDE overall_footer.html -->
