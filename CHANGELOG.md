@@ -2,6 +2,11 @@
 
 Toutes les évolutions notables de cette extension sont documentées dans ce fichier.
 
+## [2.7.2] - 2026-07-18
+
+### Corrigé
+- Prérequis PHP corrigé à `>=7.2` (`composer.json` + README). phpBB 3.3.11 et supérieur exige déjà PHP 7.2 minimum ; PHP 7.1 est donc incompatible avec la contrainte `>=3.3.14` déjà déclarée.
+
 ## [2.7.1] - 2026-07-18
 
 ### Ajouté

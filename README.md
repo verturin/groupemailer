@@ -22,7 +22,7 @@ Extension phpBB 3.3 — envoi de campagnes email à un ou plusieurs groupes de m
 | Logiciel | Version minimale |
 |----------|-----------------|
 | phpBB | 3.3.14 |
-| PHP | 7.1.0 |
+| PHP | 7.2.0 |
 
 ## Installation
 

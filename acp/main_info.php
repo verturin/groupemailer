@@ -17,7 +17,7 @@ class main_info
 		return array(
 			'filename'	=> '\verturin\groupemailer\acp\main_module',
 			'title'		=> 'ACP_GROUPEMAILER_TITLE',
-			'version'	=> '2.7.1',
+			'version'	=> '2.7.2',
 			'modes'		=> array(
 				'campaigns'	=> array(
 					'title'	=> 'ACP_GROUPEMAILER_CAMPAIGNS',

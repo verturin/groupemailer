@@ -1,9 +1,9 @@
 {
     "stable": {
         "2.7": {
-            "current": "2.7.1",
-            "announcement": "https://github.com/verturin/groupemailer/releases/tag/v2.7.1",
-            "download": "https://github.com/verturin/groupemailer/releases/download/v2.7.1/groupemailer-v2.7.1.zip",
+            "current": "2.7.2",
+            "announcement": "https://github.com/verturin/groupemailer/releases/tag/v2.7.2",
+            "download": "https://github.com/verturin/groupemailer/releases/download/v2.7.2/groupemailer-v2.7.2.zip",
             "eol": null,
             "security": false
         }
