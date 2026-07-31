@@ -19,6 +19,12 @@
 			<dd><input type="number" id="groupemailer_default_rate_interval" name="groupemailer_default_rate_interval" value="{{ GROUPEMAILER_DEFAULT_RATE_INTERVAL }}" min="1" class="inputbox" style="width:80px;"></dd>
 			<dd><span>{{ lang('GROUPEMAILER_RATE_WARNING') }}</span></dd>
 		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_default_inactive_days">{{ lang('GROUPEMAILER_DEFAULT_INACTIVE_DAYS') }}:</label></dt>
+			<dd><input type="number" id="groupemailer_default_inactive_days" name="groupemailer_default_inactive_days" value="{{ GROUPEMAILER_DEFAULT_INACTIVE_DAYS }}" min="1" class="inputbox" style="width:80px;"></dd>
+			<dd><span>{{ lang('GROUPEMAILER_DEFAULT_INACTIVE_DAYS_EXPLAIN') }}</span></dd>
+		</dl>
 	</fieldset>
 
 	<fieldset>
@@ -39,6 +45,12 @@
 			<dt><label for="groupemailer_header">{{ lang('GROUPEMAILER_HEADER') }}:</label></dt>
 			<dd><textarea id="groupemailer_header" name="groupemailer_header" rows="4" cols="60">{{ GROUPEMAILER_HEADER }}</textarea></dd>
 			<dd><span>{{ lang('GROUPEMAILER_HEADER_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_add_unsubscribe">{{ lang('GROUPEMAILER_ADD_UNSUBSCRIBE') }}:</label></dt>
+			<dd><label><input type="checkbox" id="groupemailer_add_unsubscribe" name="groupemailer_add_unsubscribe" value="1"{% if S_ADD_UNSUBSCRIBE %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_ADD_UNSUBSCRIBE_LABEL') }}</label></dd>
+			<dd><span>{{ lang('GROUPEMAILER_ADD_UNSUBSCRIBE_EXPLAIN') }}</span></dd>
 		</dl>
 
 		<dl>

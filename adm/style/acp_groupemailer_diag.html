@@ -1,0 +1,39 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+<a id="maincontent"></a>
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_DIAG_LEGEND') }}</legend>
+	<p>{{ lang('GROUPEMAILER_DIAG_EXPLAIN') }}</p>
+
+	<table class="table1" cellspacing="1">
+		<thead>
+			<tr>
+				<th style="width:35%;">{{ lang('GROUPEMAILER_DIAG_CHECK') }}</th>
+				<th>{{ lang('GROUPEMAILER_DIAG_RESULT') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for d in diag %}
+			<tr>
+				<td>{{ d.LABEL }}</td>
+				<td>
+					{% if d.S_OK %}<span style="color:#080;font-weight:bold;">OK</span> &mdash; {% endif %}
+					{% if d.S_WARN %}<span style="color:#a60;font-weight:bold;">!</span> &mdash; {% endif %}
+					{% if d.S_FAIL %}<span style="color:#a00;font-weight:bold;">PROBLÈME</span> &mdash; {% endif %}
+					{{ d.VALUE }}
+				</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</fieldset>
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_DIAG_MANUAL') }}</legend>
+	<p>{{ lang('GROUPEMAILER_DIAG_MANUAL_EXPLAIN') }}</p>
+	<p><code>{{ U_CRON_DIRECT }}</code></p>
+</fieldset>
+
+<!-- INCLUDE overall_footer.html -->

@@ -2,8 +2,8 @@
     "name": "verturin/groupemailer",
     "type": "phpbb-extension",
     "description": "Envoi de campagnes email par groupe(s) avec file d'attente pour respecter les limites d'envoi de l'hébergeur.",
-    "homepage": "https://cage-et-chastete.com",
-    "version": "2.7.2",
+    "homepage": "https://github.com/verturin/groupemailer",
+    "version": "2.18.0",
     "time": "2026-07-16",
     "license": "GPL-2.0-only",
     "authors": [

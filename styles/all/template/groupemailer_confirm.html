@@ -1,0 +1,44 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+{% if S_INVALID %}
+<div class="panel">
+	<div class="inner">
+		<h2>{{ lang('GROUPEMAILER_CONFIRM_INVALID_TITLE') }}</h2>
+		<p>{{ lang('GROUPEMAILER_CONFIRM_INVALID') }}</p>
+		<p><a href="{{ U_INDEX }}" class="button1">{{ lang('RETURN_TO_INDEX') }}</a></p>
+	</div>
+</div>
+{% else %}
+
+<div class="panel groupemailer-panel">
+	<div class="inner">
+
+		<div class="groupemailer-head">
+			<h2 class="groupemailer-subject">{{ SUBJECT }}</h2>
+			<p class="groupemailer-meta">
+				{{ lang('GROUPEMAILER_READ_FROM', SITENAME) }}
+				{% if SENT_DATE %} &middot; {{ lang('GROUPEMAILER_READ_SENT_ON', SENT_DATE) }}{% endif %}
+			</p>
+		</div>
+
+		<div class="groupemailer-message">{{ MESSAGE_BODY }}</div>
+
+		<p class="groupemailer-receipt">
+		{% if S_ALREADY %}
+			{{ lang('GROUPEMAILER_READ_ALREADY', CONFIRM_TIME) }}
+		{% else %}
+			{{ lang('GROUPEMAILER_READ_RECORDED', USERNAME, CONFIRM_TIME) }}
+		{% endif %}
+		</p>
+
+		<p class="groupemailer-actions">
+			<a href="{{ U_INDEX }}" class="button1">{{ lang('GROUPEMAILER_READ_GO_BOARD') }}</a>
+		</p>
+
+	</div>
+</div>
+
+{% endif %}
+
+<!-- INCLUDE overall_footer.html -->

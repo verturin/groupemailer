@@ -16,6 +16,7 @@
 					<th>{{ lang('GROUPEMAILER_RECIPIENTS') }}</th>
 					<th>{{ lang('GROUPEMAILER_SENT') }}</th>
 					<th>{{ lang('GROUPEMAILER_ERRORS') }}</th>
+					<th>{{ lang('GROUPEMAILER_CONFIRMED') }}</th>
 					<th>{{ lang('GROUPEMAILER_CREATED') }}</th>
 					<th>{{ lang('GROUPEMAILER_ACTIONS') }}</th>
 				</tr>
@@ -28,14 +29,23 @@
 						<span style="color:#888;">{{ campaign.SUBJECT }}</span><br>
 						<span style="color:#888;">{{ campaign.RATE }}</span>
 					</td>
-					<td>{{ campaign.STATUS_LANG }}</td>
+					<td><span style="{{ campaign.STATUS_STYLE }}">{{ campaign.STATUS_LANG }}</span></td>
 					<td style="text-align:center;">{{ campaign.TOTAL_RECIPIENTS }}</td>
 					<td style="text-align:center;">{{ campaign.SENT_COUNT }}</td>
 					<td style="text-align:center;">{{ campaign.ERROR_COUNT }}</td>
+					<td style="text-align:center;">
+						{% if campaign.S_REQUIRE_CONFIRM %}
+							{{ campaign.CONFIRMED_COUNT }} / {{ campaign.SENT_COUNT }}<br>
+							<span style="color:#888;">{{ campaign.READ_RATE }} %</span>
+						{% else %}
+							&ndash;
+						{% endif %}
+					</td>
 					<td>{{ campaign.CREATED_TIME }}</td>
 					<td>
 						{% if campaign.S_DRAFT %}
 							<a href="{{ campaign.U_EDIT }}">{{ lang('GROUPEMAILER_EDIT') }}</a> |
+							<a href="{{ campaign.U_TEST }}">{{ lang('GROUPEMAILER_TEST') }}</a> |
 							<a href="{{ campaign.U_START }}">{{ lang('GROUPEMAILER_START') }}</a> |
 							<a href="{{ campaign.U_DELETE }}">{{ lang('GROUPEMAILER_DELETE') }}</a>
 						{% elseif campaign.S_RUNNING %}
@@ -43,17 +53,29 @@
 						{% elseif campaign.S_PAUSED %}
 							<a href="{{ campaign.U_RESUME }}">{{ lang('GROUPEMAILER_RESUME') }}</a>
 						{% endif %}
+						{% if campaign.S_CAN_CANCEL %}
+							 | <a href="{{ campaign.U_CANCEL }}">{{ lang('GROUPEMAILER_CANCEL') }}</a>
+						{% endif %}
+						{% if campaign.S_CANCELLED %}
+							 | <a href="{{ campaign.U_DELETE }}">{{ lang('GROUPEMAILER_DELETE') }}</a>
+						{% endif %}
 						{% if campaign.S_HAS_ERRORS %}
 							{% if not campaign.S_DRAFT %} | {% endif %}<a href="{{ campaign.U_RETRY }}">{{ lang('GROUPEMAILER_RETRY_ERRORS') }}</a>
 						{% endif %}
-						{% if not campaign.S_DRAFT and not campaign.S_RUNNING and not campaign.S_PAUSED and not campaign.S_HAS_ERRORS %}
+						{% if campaign.S_CAN_RELANCE %}
+							 | <a href="{{ campaign.U_RELANCE }}">{{ lang('GROUPEMAILER_RELANCE') }}</a>
+						{% endif %}
+						{% if not campaign.S_DRAFT %}
+							 | <a href="{{ campaign.U_DETAILS }}">{{ lang('GROUPEMAILER_DETAILS') }}</a>
+						{% endif %}
+						{% if not campaign.S_DRAFT and not campaign.S_RUNNING and not campaign.S_PAUSED and not campaign.S_HAS_ERRORS and not campaign.S_CANCELLED %}
 							&nbsp;
 						{% endif %}
 					</td>
 				</tr>
 			{% else %}
 				<tr>
-					<td colspan="7" style="text-align:center;">{{ lang('GROUPEMAILER_NO_CAMPAIGNS') }}</td>
+					<td colspan="8" style="text-align:center;">{{ lang('GROUPEMAILER_NO_CAMPAIGNS') }}</td>
 				</tr>
 			{% endfor %}
 			</tbody>
