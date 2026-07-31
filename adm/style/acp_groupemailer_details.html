@@ -1,0 +1,108 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+<a id="maincontent"></a>
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_DETAILS_LEGEND') }}</legend>
+
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_TITLE') }}:</label></dt>
+		<dd><strong>{{ CAMPAIGN_TITLE }}</strong></dd>
+	</dl>
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_SUBJECT') }}:</label></dt>
+		<dd>{{ CAMPAIGN_SUBJECT }}</dd>
+	</dl>
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_TARGET_GROUPS') }}:</label></dt>
+		<dd>{{ CAMPAIGN_GROUPS }}</dd>
+	</dl>
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_STATUS') }}:</label></dt>
+		<dd>{{ STATUS_LANG }}</dd>
+	</dl>
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_DETAILS_SUMMARY') }}:</label></dt>
+		<dd>
+			{{ lang('GROUPEMAILER_RECIPIENTS') }}: <strong>{{ NB_TOTAL }}</strong> &nbsp;|&nbsp;
+			{{ lang('GROUPEMAILER_SENT') }}: <strong>{{ NB_SENT }}</strong> &nbsp;|&nbsp;
+			{{ lang('GROUPEMAILER_STATUS_PENDING') }}: <strong>{{ NB_PENDING }}</strong> &nbsp;|&nbsp;
+			{{ lang('GROUPEMAILER_ERRORS') }}: <strong>{{ NB_ERROR }}</strong>
+			{% if S_REQUIRE_CONFIRM %}
+				<br>{{ lang('GROUPEMAILER_CONFIRMED') }}: <strong>{{ NB_CONFIRMED }}</strong> &nbsp;|&nbsp;
+				{{ lang('GROUPEMAILER_CONFIRMED_NO') }}: <strong>{{ NB_UNCONFIRMED }}</strong>
+			{% endif %}
+		</dd>
+	</dl>
+</fieldset>
+
+{% if S_RUNNING %}
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_SEND_NOW_LEGEND') }}</legend>
+	<p>{{ lang('GROUPEMAILER_SEND_NOW_EXPLAIN') }}</p>
+	<p><a class="button1" href="{{ U_SEND_NOW }}">{{ lang('GROUPEMAILER_SEND_NOW') }}</a></p>
+</fieldset>
+{% endif %}
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_RESEND_LEGEND') }}</legend>
+	<p>{{ lang('GROUPEMAILER_RESEND_EXPLAIN') }}</p>
+	<p>
+		<a class="button2" href="{{ U_RESEND_ALL }}">{{ lang('GROUPEMAILER_RESEND_ALL') }}</a>
+		{% if S_REQUIRE_CONFIRM %}
+			&nbsp;<a class="button2" href="{{ U_RESEND_UNCONFIRMED }}">{{ lang('GROUPEMAILER_RESEND_UNCONFIRMED') }}</a>
+		{% endif %}
+	</p>
+</fieldset>
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_DETAILS_TABLE') }}</legend>
+
+	<table class="table1" cellspacing="1">
+		<thead>
+			<tr>
+				<th>{{ lang('GROUPEMAILER_RECIPIENT') }}</th>
+				<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
+				<th>{{ lang('GROUPEMAILER_SENT_DATE') }}</th>
+				<th>{{ lang('GROUPEMAILER_CONFIRMED') }}</th>
+				<th>{{ lang('GROUPEMAILER_ACTIONS') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for r in recipients %}
+			<tr{% if r.S_ERROR %} class="row3"{% endif %}>
+				<td>{{ r.USERNAME }}<br><span style="color:#888;">{{ r.EMAIL }}</span></td>
+				<td><span style="{{ r.STATUS_STYLE }}">{{ r.STATUS_LANG }}</span>{% if r.S_ERROR %}<br><span style="color:#a00;">{{ r.ERROR_MESSAGE }}</span>{% endif %}</td>
+				<td>{{ r.SENT_TIME }}</td>
+				<td>
+					{% if S_REQUIRE_CONFIRM %}
+						{% if r.S_CONFIRMED %}
+							<span style="color:#080;">{{ lang('GROUPEMAILER_CONFIRMED_YES') }}</span><br><span style="color:#888;">{{ r.CONFIRMED_TIME }}</span>
+						{% else %}
+							<span style="color:#a60;">{{ lang('GROUPEMAILER_CONFIRMED_NO') }}</span>
+						{% endif %}
+					{% else %}
+						&ndash;
+					{% endif %}
+				</td>
+				<td>
+					{% if r.S_PENDING %}
+						<span style="color:#888;">{{ lang('GROUPEMAILER_ALREADY_QUEUED') }}</span>
+					{% else %}
+						<a href="{{ r.U_RESEND_ONE }}">{{ lang('GROUPEMAILER_RESEND_ONE') }}</a>
+					{% endif %}
+				</td>
+			</tr>
+		{% else %}
+			<tr>
+				<td colspan="5" style="text-align:center;">{{ lang('GROUPEMAILER_NO_RECIPIENTS_YET') }}</td>
+			</tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</fieldset>
+
+<p><a class="button1" href="{{ U_BACK }}">{{ lang('GROUPEMAILER_BACK_TO_LIST') }}</a></p>
+
+<!-- INCLUDE overall_footer.html -->

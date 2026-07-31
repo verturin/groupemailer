@@ -1,0 +1,11 @@
+verturin_groupemailer_read:
+    path: /gm/{token}
+    defaults: { _controller: verturin.groupemailer.controller.confirm:handle }
+    requirements:
+        token: '[A-Za-z0-9]+'
+
+verturin_groupemailer_confirm:
+    path: /groupemailer/confirm/{token}
+    defaults: { _controller: verturin.groupemailer.controller.confirm:handle }
+    requirements:
+        token: '[A-Za-z0-9]+'

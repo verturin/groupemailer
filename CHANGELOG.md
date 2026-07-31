@@ -2,6 +2,140 @@
 
 Toutes les évolutions notables de cette extension sont documentées dans ce fichier.
 
+## [2.18.0] - 2026-07-27
+
+### Ajouté
+- **Arrêt définitif d'une campagne** : nouveau statut « Arrêtée » et action correspondante, disponible sur une campagne en cours d'envoi ou en pause. Les destinataires encore en attente sont écartés, ce qui a déjà été envoyé reste dans l'historique. Une boîte de confirmation indique le nombre de destinataires concernés et rappelle que « Mettre en pause » convient mieux à une interruption temporaire.
+- Une campagne arrêtée dont aucun message n'est jamais parti peut être supprimée, puisqu'il n'y a alors pas d'historique à préserver.
+
+### Corrigé
+- **`maybe_complete()` ne vérifiait pas le statut courant** : une campagne arrêtée ou mise en pause pouvait basculer d'elle-même en « Terminée » au passage du cron. Le passage en « Terminée » est désormais réservé aux campagnes réellement en cours d'envoi.
+
+## [2.17.0] - 2026-07-26
+
+### Ajouté
+- **Envoi de test** : depuis la liste des campagnes, un lien « Tester » envoie un exemplaire du message à l'adresse de l'administrateur connecté, sans toucher à la file d'attente ni aux compteurs. Le lien de consultation du test est volontairement inopérant.
+- **Taux de lecture** affiché dans la liste des campagnes, sous le rapport confirmés / envoyés.
+- **Pastilles de statut colorées** dans la liste des campagnes, l'historique et le suivi.
+- **Page de lecture repensée** : objet en titre, nom du forum et date d'envoi, corps du message aéré, accusé de réception présenté sobrement, bouton de retour vers le forum. Mise en forme dans la feuille de style dédiée, désormais correctement incluse.
+
+### Modifié
+- **Lien de consultation nettement raccourci** : route `/gm/{token}` au lieu de `/groupemailer/confirm/{token}`, et jeton de 24 caractères au lieu de 32 — soit 48 caractères au total avec la réécriture d'URL, contre 82 auparavant. 96 bits d'entropie, le lien reste indevinable. L'ancienne route est conservée pour les jetons déjà envoyés.
+
+### Corrigé (conformité phpBB)
+- **Protection CSRF rétablie** sur toutes les actions modifiant l'état (démarrer, pause, reprise, relance, renvois, envoi immédiat, test), au moyen des jetons de lien `generate_link_hash` / `check_link_hash`, mécanisme prévu par phpBB pour les liens d'action.
+- Fichier de licence renommé en `license.txt`, nom attendu par phpBB — le lien du README pointait vers un fichier inexistant.
+- La feuille de style de la page publique n'était pas incluse dans le template.
+
+## [2.16.2] - 2026-07-26
+
+### Corrigé
+- **Entité HTML dans le lien de désabonnement** : l'URL sortait en `ucp.php?i=ucp_prefs&amp;mode=personal` dans un email en texte brut, ce qui cassait le lien et constituait un signal négatif pour les filtres anti-spam.
+- **Salutation absente en mode « message complet »** : le « Bonjour {pseudo}, » n'était ajouté qu'en mode notification lorsque l'en-tête des réglages est vide. Il l'est désormais dans les trois modes.
+
+## [2.16.1] - 2026-07-26
+
+### Corrigé
+- **Sélection des groupes destinataires disparue du formulaire de campagne** (régression introduite en 2.16.0) : la suppression de l'ancienne case « Confirmation de lecture » avait emporté avec elle le bloc de sélection des groupes. Bloc restauré.
+
+## [2.16.0] - 2026-07-26
+
+### Modifié
+- **Le contenu de l'email et le suivi de lecture ne forment plus qu'un seul choix**, à trois options : notification seule avec suivi, message complet avec suivi, message complet sans suivi. Auparavant, une case « Confirmation de lecture » décochée était silencieusement ignorée en mode notification — le lien personnel y étant le seul accès au message, le suivi ne pouvait pas être désactivé. La colonne « Confirmés » affichait alors « 0 / 0 » sur une campagne où l'on croyait le suivi désactivé.
+
+### Corrigé
+- La colonne « Confirmés » affiche « – » tant qu'aucun message n'est parti, au lieu d'un « 0 / 0 » trompeur sur les brouillons.
+
+## [2.15.1] - 2026-07-26
+
+### Corrigé (envoi bloqué depuis la 2.8.0)
+- **Retrait de la dépendance au routeur dans la tâche cron.** Depuis la 2.8.0, le service `controller.helper` était injecté dans la tâche d'envoi pour générer les liens de consultation. Or ce service dépend du routeur et du template : phpBB ne parvenait plus à construire la tâche, qui était alors ignorée sans la moindre erreur visible — les campagnes restaient indéfiniment « en attente », avec 0 envoi et 0 erreur. Le service de la tâche retrouve la signature exacte de la 2.7.2, dernière version où l'envoi fonctionnait.
+- Le lien de consultation est désormais construit avec `generate_board_url()`, en tenant compte du réglage de réécriture d'URL de phpBB. Le contrôleur public, lui, conserve le routeur : il n'est instancié que lorsqu'un membre ouvre son lien.
+- La page Diagnostic affiche le lien de consultation généré, pour vérification.
+
+## [2.15.0] - 2026-07-26
+
+### Ajouté
+- **Page ACP « Diagnostic »** : interroge directement la base et le conteneur de services de phpBB pour montrer l'état réel de l'extension — colonnes présentes en base (donc migrations exécutées ou non), construction du service de la tâche d'envoi, nom de la tâche cron, tâche reconnue par le gestionnaire de cron, réglage « cron système » de phpBB, envoi d'emails activé, adresse d'expéditeur utilisée, contenu de la file d'attente et nombre de campagnes en cours. Chaque ligne indique OK, avertissement ou problème, avec la marche à suivre.
+
+### Technique
+- Migration `v60_diag_module` ajoutant le module ACP Diagnostic aux installations existantes.
+
+## [2.14.0] - 2026-07-26
+
+### Ajouté
+- **Bouton « Envoyer un lot maintenant »** sur la page de suivi d'une campagne en cours. Il déclenche immédiatement l'envoi du prochain lot sans attendre le cron ni respecter l'intervalle de cadence, et affiche le résultat (messages envoyés, erreurs) ainsi que **le message d'erreur exact** en cas d'échec. Utile pour tester une campagne, pour faire avancer un envoi sur un forum peu fréquenté, et pour diagnostiquer un cron qui ne se déclenche pas.
+
+## [2.13.1] - 2026-07-18
+
+### Corrigé
+- `composer.json` : le champ `homepage` pointait vers un site personnel, il pointe désormais vers le dépôt de l'extension.
+- Documentation neutralisée : plus aucune référence à un forum, un pseudonyme ou un hébergeur particulier dans le README, le changelog ou les exemples.
+
+## [2.13.0] - 2026-07-18
+
+### Ajouté
+- **Mode d'envoi « Notification seule »** (nouveau choix par campagne, proposé par défaut) : l'email annonce simplement qu'un message attend le membre et ne contient que son lien personnel de consultation. Le contenu ne pouvant être lu qu'en ouvrant la page, le suivi de lecture devient fiable — alors qu'en mode « message complet », un lien présent dans le texte permet de tout lire sans jamais ouvrir le lien de consultation, faussant le suivi. Ce mode active obligatoirement la confirmation de lecture.
+- **Mention de désabonnement automatique** (réglage global, activé par défaut) : chaque email se termine par la marche à suivre pour ne plus recevoir ce type de message, avec le lien vers les préférences du compte, le membre restant maître de son choix depuis son profil.
+
+### Technique
+- Nouvelle migration `v50_email_mode` (colonne `email_mode`, réglage `groupemailer_add_unsubscribe`), dépendante de `v40_deactivated`. Les campagnes existantes conservent le mode « message complet ».
+
+## [2.12.0] - 2026-07-18
+
+### Modifié
+- **Le lien de confirmation devient un lien de lecture en ligne.** Au lieu d'une page qui demandait seulement de confirmer, le lien personnel affiche désormais le message lui-même (objet, en-tête, contenu, pied de page) sur le forum ; la simple consultation de la page vaut confirmation de réception. Plus aucune action n'est demandée au destinataire.
+- Texte du lien dans l'email reformulé en conséquence.
+- Le titre de la page est l'objet du message, et la confirmation est signalée en bas de page sous forme d'accusé de réception daté.
+
+## [2.11.1] - 2026-07-18
+
+### Corrigé
+- **Relance en chaîne** : un membre qui confirmait via le lien d'un message précédent (après l'envoi d'une relance) restait « non confirmé » sur la relance et pouvait donc être relancé une nouvelle fois à tort. Au démarrage d'une relance, l'extension remonte désormais toute la chaîne des campagnes d'origine et écarte tout membre ayant confirmé n'importe lequel des messages de cette chaîne. Le nombre de membres ainsi écartés est indiqué au démarrage.
+
+## [2.11.0] - 2026-07-18
+
+### Ajouté
+- **Option explicite pour les comptes désactivés** (marqués « Inactif » dans phpBB : désactivés par un administrateur ou jamais activés). Ces comptes étaient déjà toujours écartés par la requête, mais sans contrôle ni visibilité : l'exclusion est désormais une case à cocher (activée par défaut), décochable pour une campagne invitant à réactiver son compte.
+- **Détail des exclusions** au démarrage d'une campagne : nombre de comptes désactivés, de comptes dormants et de refus des emails de masse, chacun conservé en base.
+
+### Modifié
+- La sélection des destinataires ne filtre plus les comptes désactivés directement en SQL : ils sont récupérés puis filtrés côté PHP, ce qui permet de les compter et de rendre l'exclusion optionnelle. Les robots et le compte anonyme (`USER_IGNORE`) restent exclus en SQL dans tous les cas.
+
+### Technique
+- Nouvelle migration `v40_deactivated` (colonnes `exclude_deactivated` — valeur 1 par défaut pour conserver le comportement historique —, `excluded_deactivated`, `excluded_inactive`, `excluded_massemail`), dépendante de `v30_filters`.
+
+## [2.10.0] - 2026-07-18
+
+### Ajouté
+- **Exclusion des comptes inactifs** (option par campagne) : ne pas envoyer aux membres qui ne se sont pas connectés depuis plus de X jours, seuil réglable par campagne avec une valeur par défaut dans les Réglages (180 jours). Les inscriptions récentes sans première visite sont conservées.
+- **Respect du refus des emails de masse** (option par campagne) : exclut les membres ayant décoché « Recevoir les emails de masse » dans leur profil, comme le fait l'outil natif de phpBB. Activé par défaut pour les nouvelles campagnes.
+- Le nombre de comptes écartés par les filtres est indiqué au démarrage de la campagne et conservé en base (`excluded_count`).
+
+### Technique
+- Nouvelle migration `v30_filters` (colonnes `exclude_inactive`, `inactive_days`, `respect_massemail`, `excluded_count` + réglage `groupemailer_default_inactive_days`), dépendante de `v20_confirmation` : mise à jour sans perte de données.
+
+## [2.9.0] - 2026-07-18
+
+### Ajouté
+- **Page de suivi par campagne** (lien « Suivi » dans la liste) : récapitulatif (destinataires, envoyés, en attente, erreurs, confirmés / non confirmés) et tableau détaillé de chaque destinataire avec son statut, sa date d'envoi et sa date de confirmation.
+- **Trois modes de renvoi** depuis cette page : à **tous** les destinataires, aux **non-confirmés** uniquement, ou à **un seul membre** (lien sur sa ligne). Le renvoi remet les destinataires concernés en file d'attente, l'envoi repart à la cadence de la campagne.
+- Un jeton de confirmation est généré à la volée lors d'un renvoi pour les destinataires qui n'en avaient pas encore (campagne passée en confirmation après son premier envoi).
+
+### Corrigé
+- Les compteurs « Envoyés » et « Erreurs » sont désormais **recalculés depuis la file d'attente** au lieu d'être incrémentés, ce qui évite tout double comptage après un ou plusieurs renvois.
+
+## [2.8.0] - 2026-07-18
+
+### Ajouté
+- **Confirmation de lecture par jeton unique** : option activable par campagne. Un lien unique et non devinable (`random_bytes`, 32 caractères) est généré pour chaque destinataire et ajouté à la fin de son email. Le clic enregistre la confirmation, sans aucune connexion au forum requise.
+- **Route publique** `/groupemailer/confirm/{token}` avec page de confirmation dédiée (3 cas gérés : confirmation enregistrée, déjà confirmé, lien invalide).
+- **Relance des non-lecteurs** : sur une campagne avec confirmation, le lien « Relancer les non-lecteurs » crée un brouillon dont les destinataires sont calculés au démarrage — uniquement les membres ayant reçu le message d'origine sans confirmer.
+- Colonne « Confirmés » (confirmés / envoyés) dans la liste des campagnes, colonne de confirmation avec date dans l'Historique, et total des confirmations en tête de page.
+
+### Technique
+- Nouvelle migration `v20_confirmation` (colonnes `require_confirm`, `parent_campaign_id`, `confirm_token`, `confirmed_time` + index), dépendante de `v10_install` : mise à jour sans réinstallation ni perte de données.
+
 ## [2.7.2] - 2026-07-18
 
 ### Corrigé
@@ -49,12 +183,12 @@ Toutes les évolutions notables de cette extension sont documentées dans ce fic
 ## [2.3.0] - 2026-07-17
 
 ### Modifié
-- Retrait de la vérification `check_form_key()` (jeton CSRF) sur les formulaires "Créer/modifier une campagne" et "Réglages" : échec systématique et inexpliqué sur cet hébergement même avec un formulaire fraîchement chargé (probablement un WAF ou une gestion de session ACP particulière à O2switch qui altère le jeton). L'accès reste protégé par la permission `acl_a_board` et l'authentification ACP — seuls les administrateurs déjà connectés peuvent atteindre ces formulaires.
+- Retrait de la vérification `check_form_key()` (jeton CSRF) sur les formulaires "Créer/modifier une campagne" et "Réglages" : échec systématique et inexpliqué sur certains hébergements mutualisés même avec un formulaire fraîchement chargé (probablement un pare-feu applicatif ou une gestion de session ACP particulière à l'hébergement qui altère le jeton). L'accès reste protégé par la permission `acl_a_board` et l'authentification ACP — seuls les administrateurs déjà connectés peuvent atteindre ces formulaires.
 
 ## [2.2.0] - 2026-07-17
 
 ### Corrigé (page affichée sans le cadre ACP)
-- Ajout de `<!-- INCLUDE overall_header.html -->` en début et `<!-- INCLUDE overall_footer.html -->` en fin des 4 templates ACP. Contrairement à ce qui était supposé, phpBB n'enveloppe pas automatiquement le contenu d'un module ACP dans le cadre standard (onglets, menu, styles) — il faut l'inclure explicitement dans chaque template, comme le fait déjà `chastitytracker`.
+- Ajout de `<!-- INCLUDE overall_header.html -->` en début et `<!-- INCLUDE overall_footer.html -->` en fin des 4 templates ACP. Contrairement à ce qui était supposé, phpBB n'enveloppe pas automatiquement le contenu d'un module ACP dans le cadre standard (onglets, menu, styles) — il faut l'inclure explicitement dans chaque template.
 - Remplacement du `<link rel="stylesheet">` codé en dur par la syntaxe standard `{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}`.
 
 ## [2.1.0] - 2026-07-17

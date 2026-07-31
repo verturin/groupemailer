@@ -20,11 +20,27 @@
 		</dl>
 
 		<dl>
+			<dt><label>{{ lang('GROUPEMAILER_SEND_MODE') }}:</label></dt>
+			<dd>
+				<label><input type="radio" name="send_mode" value="notice"{% if S_MODE_NOTICE %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_SEND_MODE_NOTICE') }}</label><br>
+				<label><input type="radio" name="send_mode" value="full_track"{% if S_MODE_FULL_TRACK %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_SEND_MODE_FULL_TRACK') }}</label><br>
+				<label><input type="radio" name="send_mode" value="full"{% if S_MODE_FULL %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_SEND_MODE_FULL') }}</label>
+			</dd>
+			<dd><span>{{ lang('GROUPEMAILER_SEND_MODE_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
 			<dt><label for="body">{{ lang('GROUPEMAILER_BODY') }}:</label></dt>
 			<dd><textarea id="body" name="body" rows="10" cols="60">{{ BODY }}</textarea></dd>
 			<dd><span>{{ lang('GROUPEMAILER_BODY_EXPLAIN') }}</span></dd>
 		</dl>
 
+	{% if S_IS_RELANCE %}
+		<dl>
+			<dt><label>{{ lang('GROUPEMAILER_TARGET_GROUPS') }}:</label></dt>
+			<dd><strong>{{ lang('GROUPEMAILER_RELANCE_TARGET_EXPLAIN') }}</strong></dd>
+		</dl>
+	{% else %}
 		<dl>
 			<dt><label>{{ lang('GROUPEMAILER_TARGET_GROUPS') }}:</label></dt>
 			<dd>
@@ -37,6 +53,31 @@
 			</dd>
 			<dd><span>{{ lang('GROUPEMAILER_TARGET_GROUPS_EXPLAIN') }}</span></dd>
 		</dl>
+	{% endif %}
+
+	{% if not S_IS_RELANCE %}
+		<dl>
+			<dt><label for="exclude_deactivated">{{ lang('GROUPEMAILER_EXCLUDE_DEACTIVATED') }}:</label></dt>
+			<dd><label><input type="checkbox" id="exclude_deactivated" name="exclude_deactivated" value="1"{% if S_EXCLUDE_DEACTIVATED %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_EXCLUDE_DEACTIVATED_LABEL') }}</label></dd>
+			<dd><span>{{ lang('GROUPEMAILER_EXCLUDE_DEACTIVATED_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="exclude_inactive">{{ lang('GROUPEMAILER_EXCLUDE_INACTIVE') }}:</label></dt>
+			<dd><label><input type="checkbox" id="exclude_inactive" name="exclude_inactive" value="1"{% if S_EXCLUDE_INACTIVE %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_EXCLUDE_INACTIVE_LABEL') }}</label></dd>
+			<dd>
+				<label>{{ lang('GROUPEMAILER_INACTIVE_DAYS') }}:
+				<input type="number" name="inactive_days" value="{{ INACTIVE_DAYS }}" min="1" class="inputbox" style="width:80px;"></label>
+			</dd>
+			<dd><span>{{ lang('GROUPEMAILER_EXCLUDE_INACTIVE_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="respect_massemail">{{ lang('GROUPEMAILER_RESPECT_MASSEMAIL') }}:</label></dt>
+			<dd><label><input type="checkbox" id="respect_massemail" name="respect_massemail" value="1"{% if S_RESPECT_MASSEMAIL %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_RESPECT_MASSEMAIL_LABEL') }}</label></dd>
+			<dd><span>{{ lang('GROUPEMAILER_RESPECT_MASSEMAIL_EXPLAIN') }}</span></dd>
+		</dl>
+	{% endif %}
 
 		<dl>
 			<dt><label for="rate_count">{{ lang('GROUPEMAILER_RATE_COUNT') }}:</label></dt>

@@ -1,11 +1,42 @@
-/* Group Mailer - ACP styles */
+/* Group Mailer - page publique de lecture d'un message */
 
-#acp_groupemailer .table1 th,
-#acp_groupemailer_form dl dt {
-	vertical-align: top;
+.groupemailer-panel .inner {
+	max-width: 46em;
+	margin: 0 auto;
 }
 
-#acp_groupemailer_form textarea#body {
-	width: 100%;
-	max-width: 600px;
+.groupemailer-head {
+	border-bottom: 1px solid rgba(0, 0, 0, .12);
+	margin-bottom: 1.4em;
+	padding-bottom: .8em;
+}
+
+.groupemailer-subject {
+	margin: 0 0 .3em;
+	line-height: 1.3;
+}
+
+.groupemailer-meta {
+	margin: 0;
+	font-size: .9em;
+	opacity: .7;
+}
+
+.groupemailer-message {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+	line-height: 1.65;
+	font-size: 1.05em;
+}
+
+.groupemailer-receipt {
+	margin-top: 1.8em;
+	padding: .7em 1em;
+	border-left: 3px solid rgba(60, 118, 61, .55);
+	background: rgba(60, 118, 61, .07);
+	font-size: .92em;
+}
+
+.groupemailer-actions {
+	margin-top: 1.4em;
 }

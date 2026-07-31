@@ -4,6 +4,16 @@ services:
         tags:
             - { name: event.listener }
 
+    verturin.groupemailer.controller.confirm:
+        class: verturin\groupemailer\controller\confirm
+        arguments:
+            - '@config'
+            - '@dbal.conn'
+            - '@template'
+            - '@user'
+            - '@controller.helper'
+            - '%core.table_prefix%'
+
     verturin.groupemailer.cron.task.send_queue:
         class: verturin\groupemailer\cron\task\send_queue
         arguments:
