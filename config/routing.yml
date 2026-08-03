@@ -4,6 +4,18 @@ verturin_groupemailer_read:
     requirements:
         token: '[A-Za-z0-9]+'
 
+verturin_groupemailer_unsubscribe:
+    path: /gmu/{token}
+    defaults: { _controller: verturin.groupemailer.controller.confirm:unsubscribe }
+    requirements:
+        token: '[A-Za-z0-9]+'
+
+verturin_groupemailer_resubscribe:
+    path: /gmr/{token}
+    defaults: { _controller: verturin.groupemailer.controller.confirm:resubscribe }
+    requirements:
+        token: '[A-Za-z0-9]+'
+
 verturin_groupemailer_confirm:
     path: /groupemailer/confirm/{token}
     defaults: { _controller: verturin.groupemailer.controller.confirm:handle }

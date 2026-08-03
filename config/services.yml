@@ -13,6 +13,8 @@ services:
             - '@user'
             - '@controller.helper'
             - '%core.table_prefix%'
+            - '%core.root_path%'
+            - '%core.php_ext%'
 
     verturin.groupemailer.cron.task.send_queue:
         class: verturin\groupemailer\cron\task\send_queue

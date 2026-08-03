@@ -15,6 +15,10 @@
 		<dd>{{ CAMPAIGN_SUBJECT }}</dd>
 	</dl>
 	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_BODY') }}:</label></dt>
+		<dd><div class="groupemailer-preview">{{ CAMPAIGN_BODY }}</div></dd>
+	</dl>
+	<dl>
 		<dt><label>{{ lang('GROUPEMAILER_TARGET_GROUPS') }}:</label></dt>
 		<dd>{{ CAMPAIGN_GROUPS }}</dd>
 	</dl>
@@ -32,6 +36,10 @@
 			{% if S_REQUIRE_CONFIRM %}
 				<br>{{ lang('GROUPEMAILER_CONFIRMED') }}: <strong>{{ NB_CONFIRMED }}</strong> &nbsp;|&nbsp;
 				{{ lang('GROUPEMAILER_CONFIRMED_NO') }}: <strong>{{ NB_UNCONFIRMED }}</strong>
+				{% if NB_UNSUBSCRIBED %} &nbsp;|&nbsp; <span style="color:#a00;">{{ lang('GROUPEMAILER_UNSUBSCRIBED') }}: <strong>{{ NB_UNSUBSCRIBED }}</strong></span>{% endif %}
+			{% if NB_BOUNCED %}
+				<br><span style="color:#a00;">{{ lang('GROUPEMAILER_BOUNCED_SUMMARY', NB_BOUNCED, BOUNCE_THRESHOLD) }}</span>
+			{% endif %}
 			{% endif %}
 		</dd>
 	</dl>
@@ -62,25 +70,32 @@
 	<table class="table1" cellspacing="1">
 		<thead>
 			<tr>
-				<th>{{ lang('GROUPEMAILER_RECIPIENT') }}</th>
-				<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
-				<th>{{ lang('GROUPEMAILER_SENT_DATE') }}</th>
-				<th>{{ lang('GROUPEMAILER_CONFIRMED') }}</th>
+				<th><a href="{{ U_SORT_U }}">{{ lang('GROUPEMAILER_RECIPIENT') }}</a></th>
+				<th><a href="{{ U_SORT_S }}">{{ lang('GROUPEMAILER_STATUS') }}</a></th>
+				<th><a href="{{ U_SORT_D }}">{{ lang('GROUPEMAILER_SENT_DATE') }}</a></th>
+				<th><a href="{{ U_SORT_C }}">{{ lang('GROUPEMAILER_CONFIRMED') }}</a></th>
 				<th>{{ lang('GROUPEMAILER_ACTIONS') }}</th>
 			</tr>
 		</thead>
 		<tbody>
 		{% for r in recipients %}
 			<tr{% if r.S_ERROR %} class="row3"{% endif %}>
-				<td>{{ r.USERNAME }}<br><span style="color:#888;">{{ r.EMAIL }}</span></td>
+				<td>{{ r.USERNAME|raw }}<br><span style="color:#888;">{{ r.EMAIL }}</span></td>
 				<td><span style="{{ r.STATUS_STYLE }}">{{ r.STATUS_LANG }}</span>{% if r.S_ERROR %}<br><span style="color:#a00;">{{ r.ERROR_MESSAGE }}</span>{% endif %}</td>
-				<td>{{ r.SENT_TIME }}</td>
+				<td>{{ r.SENT_TIME }}
+					{% if r.S_BOUNCED %}
+						<br><span style="color:#a00;">{{ lang('GROUPEMAILER_BOUNCED', r.FAIL_COUNT) }}</span>
+					{% endif %}
+				</td>
 				<td>
 					{% if S_REQUIRE_CONFIRM %}
 						{% if r.S_CONFIRMED %}
 							<span style="color:#080;">{{ lang('GROUPEMAILER_CONFIRMED_YES') }}</span><br><span style="color:#888;">{{ r.CONFIRMED_TIME }}</span>
 						{% else %}
 							<span style="color:#a60;">{{ lang('GROUPEMAILER_CONFIRMED_NO') }}</span>
+						{% endif %}
+						{% if r.S_UNSUBSCRIBED %}
+							<br><span style="color:#a00;">{{ lang('GROUPEMAILER_UNSUBSCRIBED') }}</span><br><span style="color:#888;">{{ r.UNSUBSCRIBED_TIME }}</span>
 						{% endif %}
 					{% else %}
 						&ndash;
@@ -92,6 +107,9 @@
 					{% else %}
 						<a href="{{ r.U_RESEND_ONE }}">{{ lang('GROUPEMAILER_RESEND_ONE') }}</a>
 					{% endif %}
+					{% if r.S_BOUNCED %}
+						<br><a href="{{ r.U_RESET_BOUNCE }}">{{ lang('GROUPEMAILER_BOUNCE_RESET') }}</a>
+					{% endif %}
 				</td>
 			</tr>
 		{% else %}
@@ -101,6 +119,26 @@
 		{% endfor %}
 		</tbody>
 	</table>
+	{% if S_PAGINATED %}
+	<div class="pagination groupemailer-pagination">
+		{{ lang('GROUPEMAILER_TOTAL_ROWS', TOTAL_ROWS) }}
+		<ul>
+		{% for p in pagination %}
+			{% if p.S_IS_ELLIPSIS %}
+				<li class="ellipsis"><span>&hellip;</span></li>
+			{% elseif p.S_IS_CURRENT %}
+				<li class="active"><span>{{ p.PAGE_NUMBER }}</span></li>
+			{% elseif p.S_IS_PREV %}
+				<li class="previous"><a href="{{ p.PAGE_URL }}">{{ lang('PREVIOUS') }}</a></li>
+			{% elseif p.S_IS_NEXT %}
+				<li class="next"><a href="{{ p.PAGE_URL }}">{{ lang('NEXT') }}</a></li>
+			{% else %}
+				<li><a href="{{ p.PAGE_URL }}">{{ p.PAGE_NUMBER }}</a></li>
+			{% endif %}
+		{% endfor %}
+		</ul>
+	</div>
+	{% endif %}
 </fieldset>
 
 <p><a class="button1" href="{{ U_BACK }}">{{ lang('GROUPEMAILER_BACK_TO_LIST') }}</a></p>

@@ -96,7 +96,7 @@ class v10_install extends \phpbb\db\migration\migration
 				'ACP_GROUPEMAILER_TITLE',
 				array(
 					'module_basename'	=> '\verturin\groupemailer\acp\main_module',
-					'modes'				=> array('campaigns', 'settings', 'history', 'diag'),
+					'modes'				=> array('campaigns', 'settings', 'history', 'diag', 'backup'),
 				),
 			)),
 

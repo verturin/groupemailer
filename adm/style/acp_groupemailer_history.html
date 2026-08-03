@@ -10,21 +10,21 @@
 	<table class="table1" cellspacing="1">
 		<thead>
 			<tr>
-				<th>{{ lang('GROUPEMAILER_SENT_DATE') }}</th>
-				<th>{{ lang('GROUPEMAILER_RECIPIENT') }}</th>
-				<th>{{ lang('GROUPEMAILER_TITLE') }}</th>
-				<th>{{ lang('GROUPEMAILER_SUBJECT') }}</th>
-				<th>{{ lang('GROUPEMAILER_TARGET_GROUPS') }}</th>
+				<th><a href="{{ U_SORT_D }}">{{ lang('GROUPEMAILER_SENT_DATE') }}</a></th>
+				<th><a href="{{ U_SORT_U }}">{{ lang('GROUPEMAILER_RECIPIENT') }}</a></th>
+				<th><a href="{{ U_SORT_T }}">{{ lang('GROUPEMAILER_TITLE') }}</a></th>
+				<th><a href="{{ U_SORT_O }}">{{ lang('GROUPEMAILER_SUBJECT') }}</a></th>
+				<th><a href="{{ U_SORT_G }}">{{ lang('GROUPEMAILER_TARGET_GROUPS') }}</a></th>
 				<th>{{ lang('GROUPEMAILER_RECIPIENTS') }}</th>
-				<th>{{ lang('GROUPEMAILER_CONFIRMED') }}</th>
-				<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
+				<th><a href="{{ U_SORT_C }}">{{ lang('GROUPEMAILER_CONFIRMED') }}</a></th>
+				<th><a href="{{ U_SORT_S }}">{{ lang('GROUPEMAILER_STATUS') }}</a></th>
 			</tr>
 		</thead>
 		<tbody>
 		{% for entry in history %}
 			<tr{% if entry.S_ERROR %} class="row3"{% endif %}>
 				<td>{{ entry.SENT_TIME }}</td>
-				<td>{{ entry.RECIPIENT }}<br><span style="color:#888;">{{ entry.EMAIL }}</span></td>
+				<td>{{ entry.RECIPIENT|raw }}<br><span style="color:#888;">{{ entry.EMAIL }}</span></td>
 				<td>{{ entry.CAMPAIGN_TITLE }}</td>
 				<td>{{ entry.SUBJECT }}</td>
 				<td>{{ entry.GROUPS }}</td>
@@ -35,6 +35,9 @@
 							<span style="color:#080;">{{ lang('GROUPEMAILER_CONFIRMED_YES') }}</span><br><span style="color:#888;">{{ entry.CONFIRMED_TIME }}</span>
 						{% else %}
 							<span style="color:#a60;">{{ lang('GROUPEMAILER_CONFIRMED_NO') }}</span>
+						{% endif %}
+						{% if entry.S_UNSUBSCRIBED %}
+							<br><span style="color:#a00;">{{ lang('GROUPEMAILER_UNSUBSCRIBED') }}</span><br><span style="color:#888;">{{ entry.UNSUBSCRIBED_TIME }}</span>
 						{% endif %}
 					{% else %}
 						&ndash;
@@ -49,6 +52,27 @@
 		{% endfor %}
 		</tbody>
 	</table>
+
+	{% if S_PAGINATED %}
+	<div class="pagination groupemailer-pagination">
+		{{ lang('GROUPEMAILER_TOTAL_ROWS', TOTAL_ROWS) }}
+		<ul>
+		{% for p in pagination %}
+			{% if p.S_IS_ELLIPSIS %}
+				<li class="ellipsis"><span>&hellip;</span></li>
+			{% elseif p.S_IS_CURRENT %}
+				<li class="active"><span>{{ p.PAGE_NUMBER }}</span></li>
+			{% elseif p.S_IS_PREV %}
+				<li class="previous"><a href="{{ p.PAGE_URL }}">{{ lang('PREVIOUS') }}</a></li>
+			{% elseif p.S_IS_NEXT %}
+				<li class="next"><a href="{{ p.PAGE_URL }}">{{ lang('NEXT') }}</a></li>
+			{% else %}
+				<li><a href="{{ p.PAGE_URL }}">{{ p.PAGE_NUMBER }}</a></li>
+			{% endif %}
+		{% endfor %}
+		</ul>
+	</div>
+	{% endif %}
 </fieldset>
 
 <!-- INCLUDE overall_footer.html -->

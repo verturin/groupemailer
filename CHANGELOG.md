@@ -2,6 +2,171 @@
 
 Toutes les évolutions notables de cette extension sont documentées dans ce fichier.
 
+## [2.28.5] - 2026-08-02
+
+### Corrigé (page de suivi)
+- **Ni le tri des colonnes ni la navigation entre les pages ne fonctionnaient.** Les requêtes tenaient pourtant compte du tri et de la page demandés, mais les liens correspondants n'étaient jamais transmis au gabarit : les en-têtes n'étaient pas cliquables et la barre de navigation restait invisible, ce qui limitait l'affichage aux cinquante premiers destinataires sans moyen d'atteindre les suivants. L'historique n'était pas concerné.
+
+## [2.28.4] - 2026-08-02
+
+### Corrigé (erreur 500 sur la page de suivi)
+- **Le résultat de la requête des destinataires était libéré deux fois** (`mysqli_result object is already closed`). En restructurant la boucle en deux passes pour n'interroger les couleurs de groupe qu'une seule fois (2.27.0), l'ancienne libération placée après la boucle avait été conservée en plus de la nouvelle. Sur MySQL, la seconde libération lève une erreur fatale.
+
+## [2.28.3] - 2026-08-02
+
+### Modifié
+- **La page de suivi rapporte désormais toute anomalie à l'écran** (type, message, fichier et ligne) au lieu de laisser le serveur renvoyer une erreur 500 muette. Certaines erreurs fatales n'apparaissent dans aucun journal selon la configuration de l'hébergeur : cette capture rend le diagnostic possible dans tous les cas.
+
+## [2.28.2] - 2026-08-02
+
+### Corrigé (erreur 500 sur la page de suivi)
+- **`get_username_string()` était appelée sans que son fichier soit chargé.** Cette fonction, introduite avec l'affichage des pseudonymes en couleur de groupe (2.27.0), appartient à `functions_content.php`, qui n'est pas chargé d'office dans l'ACP contrairement au forum. L'appel provoquait une erreur fatale immédiate, sans trace dans les journaux, sur toutes les campagnes quel que soit leur nombre de destinataires. Le fichier est désormais chargé au besoin, avec un repli reconstruisant le lien et la couleur si l'inclusion échoue.
+
+## [2.28.1] - 2026-08-02
+
+### Corrigé (erreur 500 sur la page de suivi)
+- **La barre de navigation entre les pages incluait `pagination.html`**, un gabarit du cœur de phpBB qui n'est pas résolu depuis un template d'extension : le moteur de rendu levait une erreur fatale, sans trace dans les journaux. La navigation est désormais écrite dans les templates de l'extension, à partir du bloc que phpBB alimente.
+- Ce défaut n'apparaissait qu'au-delà de cinquante lignes, seuil déclenchant l'affichage de la navigation : l'historique d'un forum peu chargé passait donc inaperçu, tandis que le suivi d'une campagne de plusieurs dizaines de destinataires échouait systématiquement.
+
+## [2.28.0] - 2026-08-02
+
+### Ajouté
+- **Choix des campagnes à sauvegarder.** La page Sauvegarde liste désormais les campagnes avec leur statut, leur nombre de destinataires et leur date, chacune assortie d'une case à cocher, plus un bouton « tout cocher ». Ne rien cocher sauvegarde l'ensemble, comme auparavant. Le format (complet ou campagnes seules) devient un choix du même formulaire.
+
+### Modifié
+- La page Diagnostic vérifie aussi les colonnes et la table introduites par les migrations récentes (`user_lang`, `unsubscribed_time`, table des adresses en échec). Une page de suivi qui ne s'affiche pas alors que ces migrations n'ont pas été exécutées est ainsi immédiatement identifiée.
+
+## [2.27.1] - 2026-08-02
+
+### Ajouté
+- **Tri par titre, par objet du message et par groupes destinataires** dans l'historique, qui ne proposait le tri que sur la date, le destinataire, la confirmation et le statut. Six colonnes sur sept sont désormais triables, un second clic inversant le sens.
+
+## [2.27.0] - 2026-08-02
+
+### Modifié
+- **Les pseudonymes reprennent la couleur de leur groupe** dans l'historique et le suivi, comme partout ailleurs sur le forum. La mise en forme est confiée à la fonction native de phpBB, qui gère aussi le lien vers le profil et le cas des comptes supprimés.
+- La couleur est celle du profil au moment de l'affichage, et non celle figée à l'envoi : un changement de groupe se reflète donc dans les tableaux.
+- Les couleurs sont récupérées en une seule requête par page affichée, quel que soit le nombre de lignes.
+
+## [2.26.1] - 2026-08-02
+
+### Corrigé
+- **Avertissements PHP sur la page Historique.** L'ajout du suivi des échecs répétés en 2.25.0 avait modifié deux blocs identiques : le lien « Réintégrer » avait donc été inséré aussi dans l'historique, où la variable de campagne courante n'existe pas, et la liste des adresses en échec n'y était pas chargée. Le lien de l'historique n'utilise plus de campagne, et la liste est correctement chargée dans les deux pages.
+- Retrait d'une capture de variable inutilisée dans la page Diagnostic, reliquat d'une version antérieure.
+
+## [2.26.0] - 2026-08-02
+
+### Modifié
+- **L'en-tête `List-Unsubscribe` est désormais activé par défaut.** Il avait été introduit désactivé le temps de vérifier qu'il ne gênait pas la remise des messages ; ce point étant confirmé, et l'en-tête pointant maintenant vers le lien de désabonnement personnel du membre, il est activé pour les nouvelles installations et une fois sur les installations existantes. Il reste décochable dans les Réglages, et cette bascule ne sera pas rejouée.
+- Aide du réglage reformulée : elle décrit l'intérêt de l'en-tête plutôt que le problème de remise qui avait motivé sa désactivation.
+
+### Technique
+- Migration `v120_unsubscribe_on`.
+
+## [2.25.0] - 2026-08-02
+
+### Ajouté
+- **Détection des adresses en échec répété.** Chaque échec d'envoi incrémente un compteur propre au membre ; un envoi réussi le remet à zéro. Au-delà du seuil réglé (trois échecs consécutifs par défaut), l'adresse est automatiquement écartée des campagnes suivantes : il est inutile de continuer à écrire à une boîte supprimée, et ces échecs répétés dégradent la réputation d'expéditeur du forum.
+- **Affichage dans la page de suivi** : mention « N échecs consécutifs » sur la ligne du destinataire, décompte des adresses écartées dans le récapitulatif, et lien **« Réintégrer »** pour remettre une adresse dans le circuit.
+- Le nombre d'adresses écartées pour ce motif est indiqué au démarrage d'une campagne, avec les autres motifs d'exclusion.
+- Seuil réglable dans les Réglages.
+
+### Technique
+- Migration `v110_bounces` (table `groupemailer_bounces`, réglage `groupemailer_bounce_threshold`).
+
+## [2.24.0] - 2026-08-02
+
+### Ajouté
+- **Désabonnement en un clic**, sans connexion au forum. Le lien figure en fin d'email et sur la page de lecture ; son ouverture désactive immédiatement la préférence native de phpBB « Recevoir les emails de masse », que l'extension respecte déjà lors du choix des destinataires. Une page de confirmation propose le **réabonnement** en cas de clic accidentel.
+- L'en-tête `List-Unsubscribe` pointe désormais vers ce lien personnel plutôt que vers les préférences du compte, ce qui le rend réellement exploitable par les messageries.
+- **Mention « Désabonné », avec sa date, dans le suivi et l'historique**, ainsi qu'un compteur des désabonnements dans le récapitulatif de campagne.
+
+### Technique
+- Migration `v100_unsubscribe` (colonne `unsubscribed_time`), routes `/gmu/{token}` et `/gmr/{token}`.
+
+## [2.23.0] - 2026-08-02
+
+### Ajouté
+- **Sauvegarde et restauration des campagnes**, nouvelle page ACP « Sauvegarde / Restauration ».
+  - *Sauvegarde complète* : campagnes, destinataires, statuts d'envoi et confirmations de lecture, dans un fichier JSON daté téléchargé sur le poste.
+  - *Campagnes seules* : uniquement les messages et leurs réglages, pour réutiliser des modèles sur un autre forum sans y transférer de données personnelles.
+  - *Restauration* : les campagnes sont recréées sous de nouveaux identifiants, sans jamais écraser l'existant ; le rattachement des relances à leur campagne d'origine est rétabli avec les nouveaux identifiants. Les jetons de consultation sont préservés, de sorte que les liens déjà envoyés restent valides.
+  - La restauration ne retient que les colonnes présentes dans la base, afin qu'une sauvegarde issue d'une autre version de l'extension reste exploitable.
+
+### Technique
+- Migration `v90_backup_module`.
+
+## [2.22.2] - 2026-08-02
+
+### Modifié
+- Retrait du lien « Test simple », ajouté en 2.22.1 à seule fin de diagnostic. La cause des non-réceptions était l'adresse d'expéditeur et non le code : ce bouton n'a plus d'objet.
+- **Aide du champ « Adresse email de l'expéditeur » reformulée.** Elle précise désormais que l'adresse doit être une boîte réellement créée sur le domaine du forum, et avertit que le journal de remise de l'hébergeur affiche « accepté » y compris lorsque le message est ensuite écarté en silence par la messagerie du destinataire.
+- Même avertissement porté dans le README et le fichier `TODO.md`.
+
+## [2.22.1] - 2026-08-01
+
+### Ajouté
+- **Lien « Test simple »** sur les brouillons, à côté de « Tester ». Il emprunte strictement le chemin d'envoi de la version 2.18.0 : langue du forum, aucun en-tête ajouté, message construit sans la couche de traduction par destinataire. Comparer les deux envois permet d'isoler l'origine d'un blocage de réception, l'objet du message de test portant le préfixe `[TEST 2.18]`.
+
+## [2.22.0] - 2026-08-01
+
+### Corrigé
+- **Retrait de l'en-tête `List-Unsubscribe-Post`.** Cette déclaration promet aux serveurs de messagerie que l'adresse indiquée accepte une requête POST de désabonnement en un clic ; la page de préférences du forum ne le fait pas. Cette promesse non tenue peut conduire Gmail ou Outlook à écarter le message silencieusement, alors que phpBB signale l'envoi comme réussi.
+- **L'en-tête `List-Unsubscribe` devient un réglage, désactivé par défaut.** Il améliore la réputation d'expéditeur, mais certains serveurs s'en montrent exigeants : mieux vaut l'activer après un envoi de test concluant.
+
+### Ajouté
+- La page Diagnostic indique la **méthode d'envoi de phpBB** (fonction `mail()` de PHP ou SMTP, avec le serveur employé) et l'**état de l'en-tête List-Unsubscribe**.
+
+### Technique
+- Migration `v80_list_unsubscribe`.
+
+## [2.21.2] - 2026-08-01
+
+### Corrigé (envoi bloqué depuis la 2.21.0)
+- **`messenger->headers()` de phpBB attend une chaîne**, à laquelle il applique `trim()` ; les en-têtes de désabonnement lui étaient passés sous forme de tableau. Chaque envoi levait donc `TypeError: trim(): Argument #1 must be of type string, array given` — aussi bien pour les campagnes que pour les envois de test. Les en-têtes sont désormais transmis un par un.
+
+### Ajouté
+- **Tri des colonnes de la liste des campagnes** : titre, statut, destinataires, envoyés, erreurs et date de création. Un second clic inverse le sens.
+
+## [2.21.1] - 2026-08-01
+
+### Corrigé
+- **Avertissements PHP sur la page Historique** : la méthode construisant le lien vers le profil d'un membre utilisait `$this->php_ext`, propriété inexistante dans le module ACP — elle avait été reprise de la tâche cron sans vérification. La propriété est désormais déclarée et alimentée depuis le conteneur.
+- **Rendu des liens plus robuste** : `make_clickable()` reçoit l'adresse du forum en second argument, et un repli interne prend le relais si le fichier de fonctions de phpBB n'est pas chargeable dans ce contexte. Les liens obtiennent également `rel="noopener noreferrer"`.
+
+## [2.21.0] - 2026-08-01
+
+### Ajouté
+- **En-têtes `List-Unsubscribe` et `List-Unsubscribe-Post`** sur chaque email. Gmail et Yahoo les exigent depuis 2024 pour les expéditeurs en nombre ; leur absence dégrade le placement en boîte de réception.
+- **Pagination** de l'historique et du suivi, 50 lignes par page. Les anciens plafonds (500 et 1000 lignes) rendaient les entrées plus anciennes définitivement invisibles.
+- **Tri des colonnes** dans l'historique et le suivi : date, destinataire, statut, confirmation. Un second clic inverse le sens.
+- **Lien vers le profil** du membre depuis son pseudonyme, dans l'historique comme dans le suivi.
+- **Contenu du message** affiché sur la page de suivi d'une campagne.
+- Fichier `TODO.md` recensant les évolutions envisagées.
+
+### Corrigé
+- **Langue des emails.** L'habillage des notifications employait `user->lang()`, c'est-à-dire la langue du visiteur ayant déclenché le cron, tandis que le gabarit utilisait celle du forum : deux destinataires pouvaient recevoir un message incohérent, selon qui passait sur le forum à ce moment. La langue de chaque destinataire est désormais figée à la constitution de la file (colonne `user_lang`) et employée à l'envoi, avec repli sur la langue du forum si elle n'est pas installée.
+- Dans `lang_strings()`, la variable `$lang` du fichier de langue inclus écrasait le paramètre de la méthode, provoquant une erreur fatale à l'envoi. Détecté par l'exécution réelle du code, le paramètre a été renommé.
+- Les compteurs de la page de suivi portent sur l'ensemble de la campagne et non sur la page affichée.
+
+### Technique
+- Migration `v70_recipient_lang` (colonne `user_lang` dans la file d'attente).
+
+## [2.20.0] - 2026-07-31
+
+### Modifié
+- **Toute campagne peut désormais être supprimée**, quel que soit son statut. Le verrou qui réservait la suppression aux brouillons est levé : la confirmation indique le titre de la campagne et, le cas échéant, le nombre d'envois qui disparaîtront de l'historique et du suivi, ainsi que les confirmations de lecture associées.
+- La confirmation avertit également lorsqu'une relance encore à l'état de brouillon calcule ses destinataires à partir de la campagne supprimée.
+
+### Nettoyé
+- Retrait de douze chaînes de langue devenues inutilisées après la fusion des réglages d'envoi et la refonte de la page de lecture.
+
+## [2.19.0] - 2026-07-31
+
+### Ajouté
+- **Liens cliquables sur la page de lecture** : les adresses web contenues dans le message sont désormais transformées en liens, au moyen de `make_clickable()`, la fonction native de phpBB déjà utilisée pour les messages du forum. Les adresses commençant par `www.` sont également reconnues.
+- Le texte du message est échappé **avant** cette transformation : une balise HTML saisie dans le contenu d'une campagne s'affiche telle quelle et ne peut pas être interprétée.
+
 ## [2.18.0] - 2026-07-27
 
 ### Ajouté
