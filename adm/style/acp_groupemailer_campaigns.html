@@ -11,13 +11,13 @@
 		<table class="table1" cellspacing="1">
 			<thead>
 				<tr>
-					<th>{{ lang('GROUPEMAILER_TITLE') }}</th>
-					<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
-					<th>{{ lang('GROUPEMAILER_RECIPIENTS') }}</th>
-					<th>{{ lang('GROUPEMAILER_SENT') }}</th>
-					<th>{{ lang('GROUPEMAILER_ERRORS') }}</th>
+					<th><a href="{{ U_SORT_T }}">{{ lang('GROUPEMAILER_TITLE') }}</a></th>
+					<th><a href="{{ U_SORT_S }}">{{ lang('GROUPEMAILER_STATUS') }}</a></th>
+					<th><a href="{{ U_SORT_R }}">{{ lang('GROUPEMAILER_RECIPIENTS') }}</a></th>
+					<th><a href="{{ U_SORT_E }}">{{ lang('GROUPEMAILER_SENT') }}</a></th>
+					<th><a href="{{ U_SORT_X }}">{{ lang('GROUPEMAILER_ERRORS') }}</a></th>
 					<th>{{ lang('GROUPEMAILER_CONFIRMED') }}</th>
-					<th>{{ lang('GROUPEMAILER_CREATED') }}</th>
+					<th><a href="{{ U_SORT_D }}">{{ lang('GROUPEMAILER_CREATED') }}</a></th>
 					<th>{{ lang('GROUPEMAILER_ACTIONS') }}</th>
 				</tr>
 			</thead>
@@ -46,8 +46,7 @@
 						{% if campaign.S_DRAFT %}
 							<a href="{{ campaign.U_EDIT }}">{{ lang('GROUPEMAILER_EDIT') }}</a> |
 							<a href="{{ campaign.U_TEST }}">{{ lang('GROUPEMAILER_TEST') }}</a> |
-							<a href="{{ campaign.U_START }}">{{ lang('GROUPEMAILER_START') }}</a> |
-							<a href="{{ campaign.U_DELETE }}">{{ lang('GROUPEMAILER_DELETE') }}</a>
+							<a href="{{ campaign.U_START }}">{{ lang('GROUPEMAILER_START') }}</a>
 						{% elseif campaign.S_RUNNING %}
 							<a href="{{ campaign.U_PAUSE }}">{{ lang('GROUPEMAILER_PAUSE') }}</a>
 						{% elseif campaign.S_PAUSED %}
@@ -56,11 +55,8 @@
 						{% if campaign.S_CAN_CANCEL %}
 							 | <a href="{{ campaign.U_CANCEL }}">{{ lang('GROUPEMAILER_CANCEL') }}</a>
 						{% endif %}
-						{% if campaign.S_CANCELLED %}
-							 | <a href="{{ campaign.U_DELETE }}">{{ lang('GROUPEMAILER_DELETE') }}</a>
-						{% endif %}
 						{% if campaign.S_HAS_ERRORS %}
-							{% if not campaign.S_DRAFT %} | {% endif %}<a href="{{ campaign.U_RETRY }}">{{ lang('GROUPEMAILER_RETRY_ERRORS') }}</a>
+							 | <a href="{{ campaign.U_RETRY }}">{{ lang('GROUPEMAILER_RETRY_ERRORS') }}</a>
 						{% endif %}
 						{% if campaign.S_CAN_RELANCE %}
 							 | <a href="{{ campaign.U_RELANCE }}">{{ lang('GROUPEMAILER_RELANCE') }}</a>
@@ -68,9 +64,7 @@
 						{% if not campaign.S_DRAFT %}
 							 | <a href="{{ campaign.U_DETAILS }}">{{ lang('GROUPEMAILER_DETAILS') }}</a>
 						{% endif %}
-						{% if not campaign.S_DRAFT and not campaign.S_RUNNING and not campaign.S_PAUSED and not campaign.S_HAS_ERRORS and not campaign.S_CANCELLED %}
-							&nbsp;
-						{% endif %}
+						 | <a href="{{ campaign.U_DELETE }}">{{ lang('GROUPEMAILER_DELETE') }}</a>
 					</td>
 				</tr>
 			{% else %}

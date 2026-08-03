@@ -54,6 +54,18 @@
 		</dl>
 
 		<dl>
+			<dt><label for="groupemailer_bounce_threshold">{{ lang('GROUPEMAILER_BOUNCE_THRESHOLD') }}:</label></dt>
+			<dd><input type="number" id="groupemailer_bounce_threshold" name="groupemailer_bounce_threshold" value="{{ GROUPEMAILER_BOUNCE_THRESHOLD }}" min="1" class="inputbox" style="width:80px;"></dd>
+			<dd><span>{{ lang('GROUPEMAILER_BOUNCE_THRESHOLD_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_list_unsubscribe">{{ lang('GROUPEMAILER_LIST_UNSUBSCRIBE') }}:</label></dt>
+			<dd><label><input type="checkbox" id="groupemailer_list_unsubscribe" name="groupemailer_list_unsubscribe" value="1"{% if S_LIST_UNSUBSCRIBE %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_LIST_UNSUBSCRIBE_LABEL') }}</label></dd>
+			<dd><span>{{ lang('GROUPEMAILER_LIST_UNSUBSCRIBE_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
 			<dt><label for="groupemailer_footer">{{ lang('GROUPEMAILER_FOOTER') }}:</label></dt>
 			<dd><textarea id="groupemailer_footer" name="groupemailer_footer" rows="4" cols="60">{{ GROUPEMAILER_FOOTER }}</textarea></dd>
 			<dd><span>{{ lang('GROUPEMAILER_FOOTER_EXPLAIN') }}</span></dd>

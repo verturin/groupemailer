@@ -22,7 +22,7 @@
 			</p>
 		</div>
 
-		<div class="groupemailer-message">{{ MESSAGE_BODY }}</div>
+		<div class="groupemailer-message">{{ MESSAGE_BODY|raw }}</div>
 
 		<p class="groupemailer-receipt">
 		{% if S_ALREADY %}
@@ -34,6 +34,14 @@
 
 		<p class="groupemailer-actions">
 			<a href="{{ U_INDEX }}" class="button1">{{ lang('GROUPEMAILER_READ_GO_BOARD') }}</a>
+		</p>
+
+		<p class="groupemailer-unsub">
+		{% if S_UNSUBSCRIBED %}
+			{{ lang('GROUPEMAILER_READ_ALREADY_UNSUB') }} <a href="{{ U_RESUBSCRIBE }}">{{ lang('GROUPEMAILER_RESUB_LINK') }}</a>
+		{% else %}
+			{{ lang('GROUPEMAILER_READ_UNSUB_INTRO') }} <a href="{{ U_UNSUBSCRIBE }}">{{ lang('GROUPEMAILER_UNSUB_LINK') }}</a>
+		{% endif %}
 		</p>
 
 	</div>
