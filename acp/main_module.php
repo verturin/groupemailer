@@ -50,6 +50,12 @@ class main_module
 
 		switch ($mode)
 		{
+			case 'dashboard':
+				$this->page_title = 'ACP_GROUPEMAILER_DASHBOARD';
+				$this->tpl_name = 'acp_groupemailer_dashboard';
+				$this->dashboard();
+				break;
+
 			case 'campaigns':
 				$this->page_title = 'ACP_GROUPEMAILER_CAMPAIGNS';
 				$this->tpl_name = 'acp_groupemailer_campaigns';
@@ -92,7 +98,7 @@ class main_module
 
 		// Les actions qui modifient l'état sont protégées par un jeton de lien,
 		// mécanisme standard de phpBB pour les liens d'action en GET.
-		$guarded = array('start', 'pause', 'resume', 'cancel', 'relance', 'reset_bounce', 'retry_errors', 'send_now', 'resend_all', 'resend_unconfirmed', 'resend_one', 'send_test');
+		$guarded = array('start', 'pause', 'resume', 'cancel', 'relance', 'duplicate', 'unschedule', 'reset_bounce', 'retry_errors', 'send_now', 'resend_all', 'resend_unconfirmed', 'resend_one', 'send_test');
 
 		if (in_array($action, $guarded, true) && !check_link_hash($this->request->variable('hash', ''), 'gm_' . $action))
 		{
@@ -186,6 +192,14 @@ class main_module
 				$this->campaign_cancel($campaign_id);
 				return;
 
+			case 'duplicate':
+				$this->campaign_duplicate($campaign_id);
+				return;
+
+			case 'unschedule':
+				$this->campaign_unschedule($campaign_id);
+				return;
+
 			case 'delete':
 				$this->campaign_delete($campaign_id);
 				return;
@@ -261,6 +275,8 @@ class main_module
 				'S_RUNNING'		=> ($row['status'] === 'running'),
 				'S_PAUSED'		=> ($row['status'] === 'paused'),
 				'S_COMPLETED'	=> ($row['status'] === 'completed'),
+				'S_SCHEDULED'	=> ($row['status'] === 'scheduled'),
+				'SCHEDULED_TIME'	=> (int) $row['scheduled_time'] > 0 ? $this->user->format_date((int) $row['scheduled_time']) : '',
 				'S_CANCELLED'	=> ($row['status'] === 'cancelled'),
 				'S_CAN_CANCEL'	=> in_array($row['status'], array('running', 'paused'), true),
 				'S_CAN_DELETE'	=> true,
@@ -274,6 +290,8 @@ class main_module
 				'U_DELETE'	=> $this->u_action . "&amp;action=delete&amp;campaign_id={$row['campaign_id']}",
 				'U_CANCEL'	=> $this->u_action . "&amp;action=cancel&amp;campaign_id={$row['campaign_id']}&amp;hash=" . generate_link_hash('gm_cancel'),
 				'U_RETRY'	=> $this->u_action . "&amp;action=retry_errors&amp;campaign_id={$row['campaign_id']}&amp;hash=" . generate_link_hash('gm_retry_errors'),
+				'U_DUPLICATE'	=> $this->u_action . "&amp;action=duplicate&amp;campaign_id={$row['campaign_id']}&amp;hash=" . generate_link_hash('gm_duplicate'),
+				'U_UNSCHEDULE'	=> $this->u_action . "&amp;action=unschedule&amp;campaign_id={$row['campaign_id']}&amp;hash=" . generate_link_hash('gm_unschedule'),
 				'U_DETAILS'	=> $this->u_action . "&amp;action=details&amp;campaign_id={$row['campaign_id']}",
 			));
 		}
@@ -306,6 +324,7 @@ class main_module
 			'respect_massemail'	=> 1,
 			'exclude_deactivated'	=> 1,
 			'email_mode'		=> 'notice',
+			'scheduled_time'	=> 0,
 		);
 
 		if ($action === 'edit' && $campaign_id)
@@ -358,6 +377,7 @@ class main_module
 			'INACTIVE_DAYS'			=> (int) $campaign['inactive_days'],
 			'S_RESPECT_MASSEMAIL'	=> (bool) $campaign['respect_massemail'],
 			'S_EXCLUDE_DEACTIVATED'	=> (bool) $campaign['exclude_deactivated'],
+			'SCHEDULED_DATE'	=> (int) $campaign['scheduled_time'] > 0 ? date('Y-m-d\\TH:i', (int) $campaign['scheduled_time']) : '',
 			'S_MODE_NOTICE'		=> ($campaign['email_mode'] === 'notice'),
 			'S_MODE_FULL_TRACK'	=> ($campaign['email_mode'] !== 'notice' && (int) $campaign['require_confirm']),
 			'S_MODE_FULL'		=> ($campaign['email_mode'] !== 'notice' && !(int) $campaign['require_confirm']),
@@ -430,6 +450,7 @@ class main_module
 			'respect_massemail'	=> $this->request->variable('respect_massemail', 0) ? 1 : 0,
 			'exclude_deactivated'	=> $this->request->variable('exclude_deactivated', 0) ? 1 : 0,
 			'email_mode'		=> $email_mode,
+			'scheduled_time'	=> $this->parse_schedule($this->request->variable('scheduled_date', '')),
 		);
 
 		if ($campaign_id)
@@ -671,8 +692,13 @@ class main_module
 
 		$this->db->sql_multi_insert($this->queue_table, $recipients);
 
+		// Une date future place la campagne en attente : la file est déjà
+		// constituée, le cron se contente de lancer l'envoi le moment venu.
+		$scheduled = (int) $campaign['scheduled_time'];
+		$is_scheduled = ($scheduled > time());
+
 		$sql_ary = array(
-			'status'			=> 'running',
+			'status'			=> $is_scheduled ? 'scheduled' : 'running',
 			'started_time'		=> time(),
 			'total_recipients'	=> count($recipients),
 		);
@@ -681,7 +707,9 @@ class main_module
 			WHERE campaign_id = ' . (int) $campaign_id;
 		$this->db->sql_query($sql);
 
-		$msg_start = $this->user->lang('GROUPEMAILER_CAMPAIGN_STARTED', count($recipients));
+		$msg_start = $is_scheduled
+			? $this->user->lang('GROUPEMAILER_CAMPAIGN_SCHEDULED', count($recipients), $this->user->format_date($scheduled))
+			: $this->user->lang('GROUPEMAILER_CAMPAIGN_STARTED', count($recipients));
 
 		if (!empty($ex_confirmed_elsewhere))
 		{
@@ -1039,6 +1067,7 @@ class main_module
 			'draft'		=> 'background:#e8e8e8;color:#555;',
 			'running'	=> 'background:#d9edf7;color:#31708f;',
 			'paused'	=> 'background:#fcf8e3;color:#8a6d3b;',
+			'scheduled'	=> 'background:#e8e4f3;color:#5b4a8a;',
 			'completed'	=> 'background:#dff0d8;color:#3c763d;',
 			'cancelled'	=> 'background:#eee;color:#777;text-decoration:line-through;',
 			'sent'		=> 'background:#dff0d8;color:#3c763d;',
@@ -1429,7 +1458,7 @@ class main_module
 		$line($this->user->lang('GROUPEMAILER_DIAG_LINK'), $sample, 'ok');
 
 		$this->template->assign_vars(array(
-			'GROUPEMAILER_VERSION'	=> '2.28.5',
+			'GROUPEMAILER_VERSION'	=> '2.29.1',
 			'U_CRON_DIRECT'	=> generate_board_url() . '/app.php/cron/verturin.groupemailer.cron.task.send_queue',
 		));
 	}
@@ -1673,6 +1702,251 @@ class main_module
 			: $this->u_action;
 
 		trigger_error($this->user->lang('GROUPEMAILER_BOUNCE_RESET_DONE') . adm_back_link($back));
+	}
+
+	/**
+	 * Convertit la date saisie dans le formulaire en horodatage.
+	 * Le fuseau de l'administrateur est appliqué, afin que l'heure indiquée
+	 * soit bien celle qu'il voit dans l'ACP.
+	 */
+	protected function parse_schedule($value)
+	{
+		$value = trim((string) $value);
+
+		if ($value === '')
+		{
+			return 0;
+		}
+
+		try
+		{
+			$tz = $this->user->create_datetime()->getTimezone();
+			$date = new \DateTime($value, $tz);
+			$time = (int) $date->format('U');
+		}
+		catch (\Throwable $e)
+		{
+			return 0;
+		}
+
+		// Une date déjà passée n'a pas de sens : l'envoi démarre alors
+		// au prochain passage du cron, ce qui est le comportement attendu.
+		return $time > 0 ? $time : 0;
+	}
+
+	/**
+	 * Duplique une campagne : le message et tous ses réglages sont repris
+	 * dans un nouveau brouillon, sans destinataires ni compteurs.
+	 */
+	protected function campaign_duplicate($campaign_id)
+	{
+		$sql = 'SELECT * FROM ' . $this->campaigns_table . '
+			WHERE campaign_id = ' . (int) $campaign_id;
+		$result = $this->db->sql_query($sql);
+		$campaign = $this->db->sql_fetchrow($result);
+		$this->db->sql_freeresult($result);
+
+		if (!$campaign)
+		{
+			trigger_error($this->user->lang('GROUPEMAILER_CAMPAIGN_NOT_FOUND') . adm_back_link($this->u_action), E_USER_WARNING);
+		}
+
+		$sql_ary = array(
+			'title'				=> $this->user->lang('GROUPEMAILER_COPY_TITLE', $campaign['title']),
+			'subject'			=> $campaign['subject'],
+			'body'				=> $campaign['body'],
+			'target_groups'		=> $campaign['target_groups'],
+			'rate_count'		=> (int) $campaign['rate_count'],
+			'rate_interval'		=> (int) $campaign['rate_interval'],
+			'require_confirm'	=> (int) $campaign['require_confirm'],
+			'email_mode'		=> $campaign['email_mode'],
+			'exclude_inactive'	=> (int) $campaign['exclude_inactive'],
+			'inactive_days'		=> (int) $campaign['inactive_days'],
+			'respect_massemail'	=> (int) $campaign['respect_massemail'],
+			'exclude_deactivated'	=> (int) $campaign['exclude_deactivated'],
+
+			// Rien n'est repris de l'exécution : ni destinataires, ni statuts,
+			// ni rattachement à une campagne d'origine.
+			'parent_campaign_id'	=> 0,
+			'status'			=> 'draft',
+			'created_time'		=> time(),
+			'created_by'		=> (int) $this->user->data['user_id'],
+		);
+
+		$sql = 'INSERT INTO ' . $this->campaigns_table . ' ' . $this->db->sql_build_array('INSERT', $sql_ary);
+		$this->db->sql_query($sql);
+
+		trigger_error($this->user->lang('GROUPEMAILER_DUPLICATE_DONE') . adm_back_link($this->u_action));
+	}
+
+	/**
+	 * Annule une programmation : la campagne redevient un brouillon ordinaire
+	 * et sa file d'attente est vidée.
+	 */
+	protected function campaign_unschedule($campaign_id)
+	{
+		$sql = 'SELECT status FROM ' . $this->campaigns_table . '
+			WHERE campaign_id = ' . (int) $campaign_id;
+		$result = $this->db->sql_query($sql);
+		$status = $this->db->sql_fetchfield('status');
+		$this->db->sql_freeresult($result);
+
+		if ($status !== 'scheduled')
+		{
+			trigger_error($this->user->lang('GROUPEMAILER_CAMPAIGN_NOT_FOUND') . adm_back_link($this->u_action), E_USER_WARNING);
+		}
+
+		$sql = 'DELETE FROM ' . $this->queue_table . '
+			WHERE campaign_id = ' . (int) $campaign_id;
+		$this->db->sql_query($sql);
+
+		$sql_ary = array(
+			'status'			=> 'draft',
+			'scheduled_time'	=> 0,
+			'total_recipients'	=> 0,
+			'sent_count'		=> 0,
+			'error_count'		=> 0,
+		);
+		$sql = 'UPDATE ' . $this->campaigns_table . '
+			SET ' . $this->db->sql_build_array('UPDATE', $sql_ary) . '
+			WHERE campaign_id = ' . (int) $campaign_id;
+		$this->db->sql_query($sql);
+
+		trigger_error($this->user->lang('GROUPEMAILER_UNSCHEDULE_DONE') . adm_back_link($this->u_action));
+	}
+
+	/**
+	 * Tableau de bord : vue d'ensemble des envois et comparaison des campagnes
+	 */
+	protected function dashboard()
+	{
+		$stats = array(
+			'campaigns'	=> 0,
+			'sent'		=> 0,
+			'errors'	=> 0,
+			'confirmed'	=> 0,
+			'unsub'		=> 0,
+		);
+
+		$sql = 'SELECT COUNT(*) AS nb FROM ' . $this->campaigns_table;
+		$result = $this->db->sql_query($sql);
+		$stats['campaigns'] = (int) $this->db->sql_fetchfield('nb');
+		$this->db->sql_freeresult($result);
+
+		$sql = 'SELECT status, COUNT(*) AS nb
+			FROM ' . $this->queue_table . '
+			GROUP BY status';
+		$result = $this->db->sql_query($sql);
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			if ($row['status'] === 'sent')
+			{
+				$stats['sent'] = (int) $row['nb'];
+			}
+			elseif ($row['status'] === 'error')
+			{
+				$stats['errors'] = (int) $row['nb'];
+			}
+		}
+		$this->db->sql_freeresult($result);
+
+		$sql = 'SELECT COUNT(*) AS nb FROM ' . $this->queue_table . '
+			WHERE confirmed_time > 0';
+		$result = $this->db->sql_query($sql);
+		$stats['confirmed'] = (int) $this->db->sql_fetchfield('nb');
+		$this->db->sql_freeresult($result);
+
+		$sql = 'SELECT COUNT(*) AS nb FROM ' . $this->queue_table . '
+			WHERE unsubscribed_time > 0';
+		$result = $this->db->sql_query($sql);
+		$stats['unsub'] = (int) $this->db->sql_fetchfield('nb');
+		$this->db->sql_freeresult($result);
+
+		$bounced = $this->bounced_users();
+
+		// Confirmations par campagne, pour le comparatif
+		$confirmed_by = array();
+		$sql = 'SELECT campaign_id, COUNT(*) AS nb
+			FROM ' . $this->queue_table . '
+			WHERE confirmed_time > 0
+			GROUP BY campaign_id';
+		$result = $this->db->sql_query($sql);
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$confirmed_by[(int) $row['campaign_id']] = (int) $row['nb'];
+		}
+		$this->db->sql_freeresult($result);
+
+		$unsub_by = array();
+		$sql = 'SELECT campaign_id, COUNT(*) AS nb
+			FROM ' . $this->queue_table . '
+			WHERE unsubscribed_time > 0
+			GROUP BY campaign_id';
+		$result = $this->db->sql_query($sql);
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$unsub_by[(int) $row['campaign_id']] = (int) $row['nb'];
+		}
+		$this->db->sql_freeresult($result);
+
+		$rates = array();
+
+		$sql = 'SELECT campaign_id, title, status, require_confirm, sent_count, error_count, created_time
+			FROM ' . $this->campaigns_table . "
+			WHERE status <> 'draft'
+			ORDER BY created_time DESC";
+		$result = $this->db->sql_query_limit($sql, 20);
+
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$cid = (int) $row['campaign_id'];
+			$sent = (int) $row['sent_count'];
+			$conf = isset($confirmed_by[$cid]) ? $confirmed_by[$cid] : 0;
+			$rate = ($sent > 0) ? (int) round($conf * 100 / $sent) : 0;
+
+			if ((int) $row['require_confirm'] && $sent > 0)
+			{
+				$rates[] = $rate;
+			}
+
+			$this->template->assign_block_vars('campaigns', array(
+				'CAMPAIGN_ID'	=> $cid,
+				'TITLE'			=> $row['title'],
+				'STATUS_LANG'	=> $this->user->lang('GROUPEMAILER_STATUS_' . strtoupper($row['status'])),
+				'STATUS_STYLE'	=> $this->status_style($row['status']),
+				'SENT'			=> $sent,
+				'ERRORS'		=> (int) $row['error_count'],
+				'CONFIRMED'		=> $conf,
+				'RATE'			=> $rate,
+				'UNSUB'			=> isset($unsub_by[$cid]) ? $unsub_by[$cid] : 0,
+				'S_TRACKED'		=> ((bool) $row['require_confirm'] && $sent > 0),
+				'CREATED_TIME'	=> $row['created_time'] ? $this->user->format_date((int) $row['created_time']) : '-',
+				'U_DETAILS'		=> $this->u_action_campaigns() . '&amp;action=details&amp;campaign_id=' . $cid,
+			));
+		}
+		$this->db->sql_freeresult($result);
+
+		$avg = $rates ? (int) round(array_sum($rates) / count($rates)) : 0;
+
+		$this->template->assign_vars(array(
+			'NB_CAMPAIGNS'	=> $stats['campaigns'],
+			'NB_SENT'		=> $stats['sent'],
+			'NB_ERRORS'		=> $stats['errors'],
+			'NB_CONFIRMED'	=> $stats['confirmed'],
+			'NB_UNSUB'		=> $stats['unsub'],
+			'NB_BOUNCED'	=> count($bounced),
+			'GLOBAL_RATE'	=> $stats['sent'] > 0 ? (int) round($stats['confirmed'] * 100 / $stats['sent']) : 0,
+			'AVERAGE_RATE'	=> $avg,
+			'S_HAS_RATES'	=> !empty($rates),
+		));
+	}
+
+	/**
+	 * Adresse de la page des campagnes, depuis n'importe quel mode
+	 */
+	protected function u_action_campaigns()
+	{
+		return str_replace('mode=dashboard', 'mode=campaigns', $this->u_action);
 	}
 
 	/**

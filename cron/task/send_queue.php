@@ -41,6 +41,8 @@ class send_queue extends \phpbb\cron\task\base
 
 	public function run()
 	{
+		$this->release_scheduled();
+
 		$sql = 'SELECT * FROM ' . $this->campaigns_table . "
 			WHERE status = 'running'
 			ORDER BY campaign_id ASC";
@@ -64,6 +66,21 @@ class send_queue extends \phpbb\cron\task\base
 
 			$this->send_batch($campaign);
 		}
+	}
+
+	/**
+	 * Lance les campagnes dont l'heure de départ programmée est atteinte.
+	 * Leur file d'attente a été constituée au moment de la programmation :
+	 * il n'y a donc qu'à basculer leur statut.
+	 */
+	protected function release_scheduled()
+	{
+		$sql = 'UPDATE ' . $this->campaigns_table . "
+			SET status = 'running', started_time = " . time() . "
+			WHERE status = 'scheduled'
+				AND scheduled_time > 0
+				AND scheduled_time <= " . time();
+		$this->db->sql_query($sql);
 	}
 
 	/**
@@ -546,7 +563,8 @@ class send_queue extends \phpbb\cron\task\base
 	public function should_run()
 	{
 		$sql = 'SELECT COUNT(*) AS running FROM ' . $this->campaigns_table . "
-			WHERE status = 'running'";
+			WHERE status = 'running'
+				OR (status = 'scheduled' AND scheduled_time > 0 AND scheduled_time <= " . time() . ')';
 		$result = $this->db->sql_query($sql);
 		$running = (int) $this->db->sql_fetchfield('running');
 		$this->db->sql_freeresult($result);

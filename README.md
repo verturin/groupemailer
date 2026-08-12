@@ -1,5 +1,5 @@
 # Group Mailer
-[![Version](https://img.shields.io/badge/version-2.28.5-blue.svg)](https://github.com/verturin/groupemailer)
+[![Version](https://img.shields.io/badge/version-2.29.1-blue.svg)](https://github.com/verturin/groupemailer)
 [![phpBB](https://img.shields.io/badge/phpBB-3.3.14+-orange.svg)](https://www.phpbb.com/)
 [![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](license.txt)
 
@@ -21,6 +21,8 @@ Extension phpBB 3.3 — envoi de campagnes email à un ou plusieurs groupes de m
 - **Page de suivi par campagne** : qui a reçu, qui a confirmé, avec renvoi à tous / aux non-confirmés / à un seul membre
 - **Envoi immédiat** d'un lot depuis l'ACP, sans attendre le cron
 - **Envoi de test** à sa propre adresse avant de démarrer une campagne
+- **Duplication** d'une campagne et **démarrage programmé** à une date choisie
+- **Tableau de bord** : vue d'ensemble et comparatif des taux de lecture
 - **Taux de lecture** par campagne
 - **Relance en un clic** des envois en erreur
 - **Historique détaillé** : destinataire, campagne, objet, groupe(s), nombre de destinataires, date, statut
@@ -91,6 +93,16 @@ Le module apparaît dans l'ACP sous la catégorie **Group Mailer** : Campagnes, 
 2. Cliquer sur **Supprimer les données** (rollback complet, aucun résidu en base)
 3. Supprimer le dossier `phpBB/ext/verturin/groupemailer/`
 4. Purger le cache phpBB
+
+## Tests
+
+L'extension est livrée avec des tests unitaires exécutables sans installation de phpBB :
+
+```
+vendor/bin/phpunit -c tests/phpunit.xml
+```
+
+Voir [tests/README.md](tests/README.md).
 
 ## Licence
 
