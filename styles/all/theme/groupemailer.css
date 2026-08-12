@@ -96,3 +96,25 @@
 .groupemailer-pagination li.ellipsis span {
 	border-color: transparent;
 }
+
+/* Tableau de bord : barre de taux de lecture */
+.groupemailer-bar {
+	display: inline-block;
+	width: 70%;
+	height: 10px;
+	vertical-align: middle;
+	background: rgba(0, 0, 0, .08);
+	border-radius: 5px;
+	overflow: hidden;
+}
+
+.groupemailer-bar span {
+	display: block;
+	height: 100%;
+	background: #3c763d;
+}
+
+.groupemailer-bar-value {
+	margin-left: .5em;
+	font-size: .9em;
+}

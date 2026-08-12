@@ -3,7 +3,7 @@
     "type": "phpbb-extension",
     "description": "Envoi de campagnes email par groupe(s) avec file d'attente pour respecter les limites d'envoi de l'hébergeur.",
     "homepage": "https://github.com/verturin/groupemailer",
-    "version": "2.28.5",
+    "version": "2.29.1",
     "time": "2026-07-16",
     "license": "GPL-2.0-only",
     "authors": [

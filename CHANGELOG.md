@@ -2,6 +2,22 @@
 
 Toutes les évolutions notables de cette extension sont documentées dans ce fichier.
 
+## [2.29.1] - 2026-08-03
+
+### Ajouté
+- **Colonne « Désabonnés » dans le comparatif du tableau de bord.** Seul le total général était affiché : il indiquait combien de membres s'étaient désabonnés, mais pas à la suite de quelle campagne. Le décompte est désormais donné campagne par campagne, ce qui permet de repérer un message ayant provoqué plus de départs que les autres.
+
+## [2.29.0] - 2026-08-03
+
+### Ajouté
+- **Duplication d'une campagne** : le message et l'ensemble de ses réglages sont repris dans un nouveau brouillon, sans destinataires, compteurs ni rattachement à une campagne d'origine. Pratique pour un message récurrent.
+- **Démarrage programmé** : un champ de date et d'heure permet de préparer un envoi à l'avance. « Démarrer » constitue alors la liste des destinataires et place la campagne au statut « Programmée » ; le cron lance l'envoi de lui-même à l'heure venue. La programmation peut être annulée, ce qui vide la file et rend la campagne à l'état de brouillon.
+- **Tableau de bord** : vue d'ensemble du volume, de la lecture et des points de vigilance (désabonnements, adresses écartées), puis comparatif des vingt dernières campagnes avec leur taux de lecture. Le taux global et la moyenne par campagne sont distingués, un écart entre les deux indiquant que les grandes campagnes sont lues différemment des petites.
+- **Tests automatisés** dans `tests/` : dix-sept tests unitaires exécutables sans installation de phpBB, couvrant la construction des emails, la résolution de la langue, les en-têtes, ainsi que la structure du module d'administration. Ces derniers ciblent les défauts réellement rencontrés — méthode appelée mais absente, gabarit manquant, résultat de requête libéré deux fois, liens de tri non transmis, inclusion d'un gabarit du cœur, accès direct aux superglobales.
+
+### Technique
+- Migration `v130_schedule` (colonne `scheduled_time`, module Tableau de bord), nouveau statut `scheduled`.
+
 ## [2.28.5] - 2026-08-02
 
 ### Corrigé (page de suivi)

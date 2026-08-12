@@ -79,6 +79,14 @@
 		</dl>
 	{% endif %}
 
+	{% if not S_IS_RELANCE %}
+		<dl>
+			<dt><label for="scheduled_date">{{ lang('GROUPEMAILER_SCHEDULE') }}:</label></dt>
+			<dd><input type="datetime-local" id="scheduled_date" name="scheduled_date" value="{{ SCHEDULED_DATE }}" class="inputbox" style="width:220px;"></dd>
+			<dd><span>{{ lang('GROUPEMAILER_SCHEDULE_EXPLAIN') }}</span></dd>
+		</dl>
+	{% endif %}
+
 		<dl>
 			<dt><label for="rate_count">{{ lang('GROUPEMAILER_RATE_COUNT') }}:</label></dt>
 			<dd><input type="number" id="rate_count" name="rate_count" value="{{ RATE_COUNT }}" min="1" class="inputbox" style="width:80px;"></dd>

@@ -1,0 +1,82 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+<a id="maincontent"></a>
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_DASH_OVERVIEW') }}</legend>
+
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_DASH_VOLUME') }}:</label></dt>
+		<dd>
+			{{ lang('GROUPEMAILER_CAMPAIGN_LIST') }}: <strong>{{ NB_CAMPAIGNS }}</strong> &nbsp;|&nbsp;
+			{{ lang('GROUPEMAILER_SENT') }}: <strong>{{ NB_SENT }}</strong> &nbsp;|&nbsp;
+			{{ lang('GROUPEMAILER_ERRORS') }}: <strong>{{ NB_ERRORS }}</strong>
+		</dd>
+	</dl>
+
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_DASH_READING') }}:</label></dt>
+		<dd>
+			{{ lang('GROUPEMAILER_CONFIRMED') }}: <strong>{{ NB_CONFIRMED }}</strong> &nbsp;|&nbsp;
+			{{ lang('GROUPEMAILER_DASH_GLOBAL_RATE') }}: <strong>{{ GLOBAL_RATE }} %</strong>
+			{% if S_HAS_RATES %} &nbsp;|&nbsp; {{ lang('GROUPEMAILER_DASH_AVERAGE_RATE') }}: <strong>{{ AVERAGE_RATE }} %</strong>{% endif %}
+		</dd>
+		<dd><span>{{ lang('GROUPEMAILER_DASH_RATE_EXPLAIN') }}</span></dd>
+	</dl>
+
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_DASH_ATTENTION') }}:</label></dt>
+		<dd>
+			{{ lang('GROUPEMAILER_UNSUBSCRIBED') }}: <strong>{{ NB_UNSUB }}</strong> &nbsp;|&nbsp;
+			{{ lang('GROUPEMAILER_DASH_BOUNCED') }}: <strong>{{ NB_BOUNCED }}</strong>
+		</dd>
+	</dl>
+</fieldset>
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_DASH_COMPARE') }}</legend>
+	<p>{{ lang('GROUPEMAILER_DASH_COMPARE_EXPLAIN') }}</p>
+
+	<table class="table1" cellspacing="1">
+		<thead>
+			<tr>
+				<th>{{ lang('GROUPEMAILER_TITLE') }}</th>
+				<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
+				<th>{{ lang('GROUPEMAILER_SENT') }}</th>
+				<th>{{ lang('GROUPEMAILER_ERRORS') }}</th>
+				<th>{{ lang('GROUPEMAILER_CONFIRMED') }}</th>
+				<th>{{ lang('GROUPEMAILER_UNSUBSCRIBED') }}</th>
+				<th style="width:22%;">{{ lang('GROUPEMAILER_DASH_RATE') }}</th>
+				<th>{{ lang('GROUPEMAILER_CREATED') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for c in campaigns %}
+			<tr>
+				<td><a href="{{ c.U_DETAILS }}">{{ c.TITLE }}</a></td>
+				<td><span style="{{ c.STATUS_STYLE }}">{{ c.STATUS_LANG }}</span></td>
+				<td style="text-align:center;">{{ c.SENT }}</td>
+				<td style="text-align:center;">{{ c.ERRORS }}</td>
+				<td style="text-align:center;">{{ c.CONFIRMED }}</td>
+				<td style="text-align:center;">
+					{% if c.UNSUB %}<span style="color:#a00;">{{ c.UNSUB }}</span>{% else %}0{% endif %}
+				</td>
+				<td>
+					{% if c.S_TRACKED %}
+						<div class="groupemailer-bar"><span style="width:{{ c.RATE }}%;"></span></div>
+						<span class="groupemailer-bar-value">{{ c.RATE }} %</span>
+					{% else %}
+						&ndash;
+					{% endif %}
+				</td>
+				<td>{{ c.CREATED_TIME }}</td>
+			</tr>
+		{% else %}
+			<tr><td colspan="8" style="text-align:center;">{{ lang('GROUPEMAILER_NO_CAMPAIGNS') }}</td></tr>
+		{% endfor %}
+		</tbody>
+	</table>
+</fieldset>
+
+<!-- INCLUDE overall_footer.html -->
