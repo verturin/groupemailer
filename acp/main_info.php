@@ -17,7 +17,7 @@ class main_info
 		return array(
 			'filename'	=> '\verturin\groupemailer\acp\main_module',
 			'title'		=> 'ACP_GROUPEMAILER_TITLE',
-			'version'	=> '2.29.1',
+			'version'	=> '2.33.1',
 			'modes'		=> array(
 				'dashboard'	=> array(
 					'title'	=> 'ACP_GROUPEMAILER_DASHBOARD',
@@ -36,6 +36,11 @@ class main_info
 				),
 				'diag'	=> array(
 					'title'	=> 'ACP_GROUPEMAILER_DIAG',
+					'auth'	=> 'ext_verturin/groupemailer && acl_a_board',
+					'cat'	=> array('ACP_GROUPEMAILER_TITLE'),
+				),
+				'unsubscribes'	=> array(
+					'title'	=> 'ACP_GROUPEMAILER_UNSUBS',
 					'auth'	=> 'ext_verturin/groupemailer && acl_a_board',
 					'cat'	=> array('ACP_GROUPEMAILER_TITLE'),
 				),

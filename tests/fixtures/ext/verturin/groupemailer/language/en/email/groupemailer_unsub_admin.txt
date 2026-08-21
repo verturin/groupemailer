@@ -1,0 +1,12 @@
+Subject: A member has unsubscribed
+
+A member has just unsubscribed from the board's bulk mailings.
+
+Member: {USERNAME}
+Address: {EMAIL}
+Date: {UNSUB_DATE}
+Campaign that led to the unsubscription: {CAMPAIGN}
+
+This member will no longer appear among the recipients of future campaigns.
+
+The full list of unsubscriptions is available in the administration panel, under Group Mailer then Unsubscribes.

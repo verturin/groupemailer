@@ -93,6 +93,33 @@ namespace phpbb\config
 			$this->data[$key] = $value;
 		}
 	}
+
+	/**
+	 * Textes longs : phpBB les range dans une table dédiée, config_value
+	 * étant limité à 255 caractères.
+	 */
+	class db_text
+	{
+		public $data = array();
+
+		public function get($key)
+		{
+			return isset($this->data[$key]) ? $this->data[$key] : '';
+		}
+
+		public function set($key, $value)
+		{
+			$this->data[$key] = $value;
+		}
+
+		public function set_array(array $values)
+		{
+			foreach ($values as $key => $value)
+			{
+				$this->data[$key] = $value;
+			}
+		}
+	}
 }
 
 namespace phpbb\db\driver

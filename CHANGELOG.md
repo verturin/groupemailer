@@ -2,6 +2,65 @@
 
 Toutes les évolutions notables de cette extension sont documentées dans ce fichier.
 
+## [2.33.1] - 2026-08-07
+
+### Modifié
+- **Le renvoi d'un accusé de désabonnement adresse désormais la copie à l'administrateur désigné**, comme le fait le désabonnement initial. Cette copie avait été volontairement omise sur les renvois, ce qui laissait croire à un défaut de configuration lorsqu'on testait la fonction par ce biais.
+
+## [2.33.0] - 2026-08-07
+
+### Ajouté
+- **Vérification de l'appartenance aux groupes lors d'une relance.** Un membre ayant quitté les groupes visés par la campagne d'origine n'est plus relancé : il est consigné dans la file au statut « Hors groupes », avec la mention « N'appartient plus aux groupes ciblés : non relancé » à côté de « Non confirmé ». Il reste ainsi présent au tableau de suivi, sans fausser les statistiques ni le nombre de destinataires. Le nombre de membres concernés est indiqué au démarrage.
+- Les relances conservent désormais les groupes de la campagne d'origine, ce qui rend cette vérification possible.
+- **La page Diagnostic indique le destinataire des copies de désabonnement** et les modes d'envoi retenus, ou signale qu'aucun administrateur n'est sélectionné.
+
+### Modifié
+- Texte par défaut de l'accusé de désabonnement.
+
+## [2.32.0] - 2026-08-07
+
+### Ajouté
+- **Texte de l'accusé de désabonnement modifiable** dans les Réglages. Le texte par défaut s'affiche en filigrane du champ ; les marqueurs `{USERNAME}`, `{SITENAME}`, `{UNSUB_DATE}` et `{U_PREFS}` y sont remplacés à l'envoi.
+- **Renvoi de l'accusé de désabonnement** depuis la page Désabonnements, avec mémorisation de la date de renvoi, affichée dans une colonne dédiée. L'accusé renvoyé porte la date du désabonnement d'origine et non celle du renvoi, cette première date étant celle qui fait foi pour le membre.
+
+### Corrigé
+- **Troncature des textes longs.** L'en-tête et le pied de page étaient rangés dans `config_value`, un `VARCHAR(255)` : au-delà, le texte était coupé sans avertissement. Ils passent, avec le nouveau texte d'accusé, dans la table que phpBB réserve aux textes longs. Les valeurs déjà saisies sont reprises par la migration.
+
+### Technique
+- Migration `v160_long_texts` (colonne `unsub_resent_time`, bascule des textes vers `config_text`).
+- La logique de notification de désabonnement est portée par le service d'envoi, appelé aussi bien depuis la page publique que depuis l'ACP.
+
+## [2.31.2] - 2026-08-07
+
+### Modifié
+- **Formulation des messages de désabonnement** : ils annoncent désormais que le compte devient inactif pour les envois groupés, tout en précisant que l'accès au forum n'est pas remis en cause. Le membre comprend ainsi qu'il ne sera plus sollicité, sans craindre une exclusion.
+
+## [2.31.1] - 2026-08-07
+
+### Modifié
+- **Formulation des messages de désabonnement.** Le terme « actif » était employé pour dire que le compte restait utilisable, alors que phpBB s'en sert pour désigner le statut d'un compte : un membre pouvait comprendre que son inscription était en cause. Les six occurrences, dans l'accusé envoyé au membre, sur la page publique et dans l'aide du réglage, parlent désormais d'inscription et de participation plutôt que d'état du compte.
+
+## [2.31.0] - 2026-08-07
+
+### Ajouté
+- **Accusé de désabonnement au membre.** Il reçoit un email confirmant la prise en compte de sa demande, avec sa date, et précisant que son compte reste actif : seuls les envois groupés cessent, les messages privés et les notifications qu'il a lui-même demandées ne sont pas concernés. Le message rappelle également comment revenir en arrière depuis son profil. Envoi activé par défaut.
+- **Copie à un administrateur**, par email et par message privé, au choix. La notification indique le membre, son adresse, la date et la campagne à l'origine du départ.
+- **Choix de l'administrateur destinataire** dans les Réglages, parmi les fondateurs et les membres du groupe Administrateurs. Une seule personne est informée, afin qu'un désabonnement ne génère pas plusieurs messages. Les comptes sans adresse email sont signalés dans la liste.
+
+### Technique
+- Migration `v150_unsub_notify`, gabarits d'email `groupemailer_unsub_user` et `groupemailer_unsub_admin` en français et en anglais.
+- L'envoi des accusés est isolé du désabonnement lui-même : un échec de messagerie ne remet jamais en cause l'enregistrement de la demande.
+
+## [2.30.0] - 2026-08-07
+
+### Ajouté
+- **Page « Désabonnements »** : liste des membres ayant utilisé le lien de désabonnement reçu par email, avec la date et la campagne à l'origine du départ, triable et paginée. Un membre s'étant désabonné depuis plusieurs campagnes n'apparaît qu'une fois, à la date la plus récente.
+- La page distingue les membres réellement désabonnés de ceux qui se sont **réabonnés depuis**, en interrogeant la préférence courante de leur profil plutôt que le seul historique.
+- **Réabonnement depuis l'ACP**, accompagné d'un rappel qu'il ne doit se faire qu'à la demande explicite du membre : un réabonnement non sollicité conduit souvent au signalement du message comme indésirable.
+
+### Technique
+- Migration `v140_unsub_module`.
+
 ## [2.29.1] - 2026-08-03
 
 ### Ajouté

@@ -34,6 +34,7 @@ class send_queue_test extends TestCase
 
 		$this->task = new \verturin\groupemailer\cron\task\send_queue(
 			$config,
+			new \phpbb\config\db_text(),
 			new \phpbb\db\driver\fake(),
 			new \phpbb\user(),
 			new \phpbb\group\helper(),

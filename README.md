@@ -1,5 +1,5 @@
 # Group Mailer
-[![Version](https://img.shields.io/badge/version-2.29.1-blue.svg)](https://github.com/verturin/groupemailer)
+[![Version](https://img.shields.io/badge/version-2.33.1-blue.svg)](https://github.com/verturin/groupemailer)
 [![phpBB](https://img.shields.io/badge/phpBB-3.3.14+-orange.svg)](https://www.phpbb.com/)
 [![License](https://img.shields.io/badge/license-GPL--2.0-green.svg)](license.txt)
 
@@ -16,7 +16,7 @@ Extension phpBB 3.3 — envoi de campagnes email à un ou plusieurs groupes de m
 - **Trois modes d'envoi** : notification seule avec suivi (message lu en ligne, suivi fiable), message complet avec suivi, ou message complet sans suivi
 - **Suivi de lecture** : lien personnel affichant le message en ligne, la consultation valant confirmation (sans connexion au forum)
 - **Liens cliquables** dans le message affiché en ligne
-- **Désabonnement en un clic** depuis l'email ou la page de lecture, sans connexion, avec réabonnement possible et suivi des désabonnements
+- **Désabonnement en un clic** depuis l'email ou la page de lecture, sans connexion, avec une page ACP dédiée au suivi des désabonnements et au réabonnement
 - **Relance des non-lecteurs** : nouvelle campagne ciblant automatiquement ceux qui n'ont pas confirmé
 - **Page de suivi par campagne** : qui a reçu, qui a confirmé, avec renvoi à tous / aux non-confirmés / à un seul membre
 - **Envoi immédiat** d'un lot depuis l'ACP, sans attendre le cron

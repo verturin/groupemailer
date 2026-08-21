@@ -72,6 +72,43 @@
 		</dl>
 	</fieldset>
 
+	<fieldset>
+		<legend>{{ lang('GROUPEMAILER_UNSUB_NOTIFY_LEGEND') }}</legend>
+		<p>{{ lang('GROUPEMAILER_UNSUB_NOTIFY_EXPLAIN') }}</p>
+
+		<dl>
+			<dt><label for="groupemailer_unsub_confirm">{{ lang('GROUPEMAILER_UNSUB_CONFIRM') }}:</label></dt>
+			<dd><label><input type="checkbox" id="groupemailer_unsub_confirm" name="groupemailer_unsub_confirm" value="1"{% if S_UNSUB_CONFIRM %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_UNSUB_CONFIRM_LABEL') }}</label></dd>
+			<dd><span>{{ lang('GROUPEMAILER_UNSUB_CONFIRM_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_unsub_text">{{ lang('GROUPEMAILER_UNSUB_TEXT_LABEL') }}:</label></dt>
+			<dd><textarea id="groupemailer_unsub_text" name="groupemailer_unsub_text" rows="10" cols="60" placeholder="{{ GROUPEMAILER_UNSUB_DEFAULT }}">{{ GROUPEMAILER_UNSUB_TEXT }}</textarea></dd>
+			<dd><span>{{ lang('GROUPEMAILER_UNSUB_TEXT_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label for="groupemailer_unsub_notify_id">{{ lang('GROUPEMAILER_UNSUB_NOTIFY_WHO') }}:</label></dt>
+			<dd>
+				<select id="groupemailer_unsub_notify_id" name="groupemailer_unsub_notify_id">
+					<option value="0">{{ lang('GROUPEMAILER_UNSUB_NOTIFY_NONE') }}</option>
+				{% for a in admins %}
+					<option value="{{ a.USER_ID }}"{% if a.S_SELECTED %} selected="selected"{% endif %}>{{ a.USERNAME }}{% if a.S_NO_EMAIL %} — {{ lang('GROUPEMAILER_UNSUB_NOTIFY_NOMAIL') }}{% endif %}</option>
+				{% endfor %}
+				</select>
+			</dd>
+			<dd><span>{{ lang('GROUPEMAILER_UNSUB_NOTIFY_WHO_EXPLAIN') }}</span></dd>
+		</dl>
+
+		<dl>
+			<dt><label>{{ lang('GROUPEMAILER_UNSUB_NOTIFY_HOW') }}:</label></dt>
+			<dd><label><input type="checkbox" name="groupemailer_unsub_notify_email" value="1"{% if S_UNSUB_NOTIFY_EMAIL %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_UNSUB_NOTIFY_BY_EMAIL') }}</label></dd>
+			<dd><label><input type="checkbox" name="groupemailer_unsub_notify_pm" value="1"{% if S_UNSUB_NOTIFY_PM %} checked="checked"{% endif %}> {{ lang('GROUPEMAILER_UNSUB_NOTIFY_BY_PM') }}</label></dd>
+			<dd><span>{{ lang('GROUPEMAILER_UNSUB_NOTIFY_HOW_EXPLAIN') }}</span></dd>
+		</dl>
+	</fieldset>
+
 	<p class="submit-buttons">
 		<input type="hidden" name="creation_time" value="{{ CREATION_TIME }}">
 		<input type="hidden" name="form_token" value="{{ FORM_TOKEN }}">

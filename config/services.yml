@@ -8,6 +8,8 @@ services:
         class: verturin\groupemailer\controller\confirm
         arguments:
             - '@config'
+            - '@config_text'
+            - '@verturin.groupemailer.cron.task.send_queue'
             - '@dbal.conn'
             - '@template'
             - '@user'
@@ -20,6 +22,7 @@ services:
         class: verturin\groupemailer\cron\task\send_queue
         arguments:
             - '@config'
+            - '@config_text'
             - '@dbal.conn'
             - '@user'
             - '@group_helper'

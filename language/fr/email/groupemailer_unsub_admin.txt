@@ -1,0 +1,12 @@
+Subject: Désabonnement d'un membre
+
+Un membre vient de se désabonner des envois groupés du forum.
+
+Membre : {USERNAME}
+Adresse : {EMAIL}
+Date : {UNSUB_DATE}
+Campagne à l'origine du désabonnement : {CAMPAIGN}
+
+Ce membre n'apparaîtra plus dans les destinataires des prochaines campagnes.
+
+La liste complète des désabonnements est consultable dans le panneau d'administration, rubrique Group Mailer puis Désabonnements.

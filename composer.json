@@ -3,12 +3,14 @@
     "type": "phpbb-extension",
     "description": "Envoi de campagnes email par groupe(s) avec file d'attente pour respecter les limites d'envoi de l'hébergeur.",
     "homepage": "https://github.com/verturin/groupemailer",
-    "version": "2.29.1",
+    "version": "2.33.1",
     "time": "2026-07-16",
     "license": "GPL-2.0-only",
     "authors": [
         {
-            "name": "Verturin"
+            "name": "Verturin",
+			"homepage": "https://github.com/verturin",
+			"role": "Lead Developer"			
         }
     ],
     "require": {
@@ -20,9 +22,10 @@
             "phpbb/phpbb": ">=3.3.14,<3.4.0@dev"
         },
         "version-check": {
-            "host": "raw.githubusercontent.com",
-            "directory": "/verturin/groupemailer/master",
-            "filename": "version.json"
+			"host": "verturin.github.io",
+			"directory": "/groupemailer",
+			"filename": "version.json",
+			"ssl": true			
         }
     }
 }

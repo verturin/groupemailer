@@ -94,6 +94,9 @@
 						{% else %}
 							<span style="color:#a60;">{{ lang('GROUPEMAILER_CONFIRMED_NO') }}</span>
 						{% endif %}
+						{% if r.S_LEFT_GROUP %}
+							<br><span style="color:#8a5a2b;">{{ lang('GROUPEMAILER_LEFT_GROUP_NOTE') }}</span>
+						{% endif %}
 						{% if r.S_UNSUBSCRIBED %}
 							<br><span style="color:#a00;">{{ lang('GROUPEMAILER_UNSUBSCRIBED') }}</span><br><span style="color:#888;">{{ r.UNSUBSCRIBED_TIME }}</span>
 						{% endif %}
