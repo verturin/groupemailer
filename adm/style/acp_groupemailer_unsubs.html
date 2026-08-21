@@ -1,0 +1,75 @@
+<!-- INCLUDE overall_header.html -->
+{% INCLUDECSS '@verturin_groupemailer/groupemailer.css' %}
+
+<a id="maincontent"></a>
+
+<fieldset>
+	<legend>{{ lang('GROUPEMAILER_UNSUBS_LEGEND') }}</legend>
+	<p>{{ lang('GROUPEMAILER_UNSUBS_EXPLAIN') }}</p>
+
+	<dl>
+		<dt><label>{{ lang('GROUPEMAILER_UNSUBS_TOTAL') }}:</label></dt>
+		<dd><strong>{{ NB_UNSUBS }}</strong></dd>
+	</dl>
+
+	<table class="table1" cellspacing="1">
+		<thead>
+			<tr>
+				<th><a href="{{ U_SORT_U }}">{{ lang('GROUPEMAILER_RECIPIENT') }}</a></th>
+				<th><a href="{{ U_SORT_T }}">{{ lang('GROUPEMAILER_UNSUBS_CAMPAIGN') }}</a></th>
+				<th><a href="{{ U_SORT_D }}">{{ lang('GROUPEMAILER_UNSUBS_DATE') }}</a></th>
+				<th>{{ lang('GROUPEMAILER_UNSUBS_RESENT') }}</th>
+				<th>{{ lang('GROUPEMAILER_STATUS') }}</th>
+				<th>{{ lang('GROUPEMAILER_ACTIONS') }}</th>
+			</tr>
+		</thead>
+		<tbody>
+		{% for u in unsubs %}
+			<tr>
+				<td>{{ u.USERNAME|raw }}<br><span style="color:#888;">{{ u.EMAIL }}</span></td>
+				<td><a href="{{ u.U_DETAILS }}">{{ u.CAMPAIGN }}</a></td>
+				<td>{{ u.UNSUB_TIME }}</td>
+				<td>{% if u.RESENT_TIME %}{{ u.RESENT_TIME }}{% else %}&ndash;{% endif %}</td>
+				<td>
+					{% if u.S_RESUBSCRIBED %}
+						<span style="color:#080;">{{ lang('GROUPEMAILER_UNSUBS_BACK') }}</span>
+					{% else %}
+						<span style="color:#a00;">{{ lang('GROUPEMAILER_UNSUBSCRIBED') }}</span>
+					{% endif %}
+				</td>
+				<td>
+					<a href="{{ u.U_RESEND }}">{{ lang('GROUPEMAILER_UNSUBS_RESEND') }}</a>
+					{% if not u.S_RESUBSCRIBED %}
+						<br><a href="{{ u.U_RESUBSCRIBE }}">{{ lang('GROUPEMAILER_UNSUBS_RESUB') }}</a>
+					{% endif %}
+				</td>
+			</tr>
+		{% else %}
+			<tr><td colspan="6" style="text-align:center;">{{ lang('GROUPEMAILER_UNSUBS_NONE') }}</td></tr>
+		{% endfor %}
+		</tbody>
+	</table>
+
+	{% if S_PAGINATED %}
+	<div class="pagination groupemailer-pagination">
+		{{ lang('GROUPEMAILER_TOTAL_ROWS', TOTAL_ROWS) }}
+		<ul>
+		{% for p in pagination %}
+			{% if p.S_IS_ELLIPSIS %}
+				<li class="ellipsis"><span>&hellip;</span></li>
+			{% elseif p.S_IS_CURRENT %}
+				<li class="active"><span>{{ p.PAGE_NUMBER }}</span></li>
+			{% elseif p.S_IS_PREV %}
+				<li class="previous"><a href="{{ p.PAGE_URL }}">{{ lang('PREVIOUS') }}</a></li>
+			{% elseif p.S_IS_NEXT %}
+				<li class="next"><a href="{{ p.PAGE_URL }}">{{ lang('NEXT') }}</a></li>
+			{% else %}
+				<li><a href="{{ p.PAGE_URL }}">{{ p.PAGE_NUMBER }}</a></li>
+			{% endif %}
+		{% endfor %}
+		</ul>
+	</div>
+	{% endif %}
+</fieldset>
+
+<!-- INCLUDE overall_footer.html -->

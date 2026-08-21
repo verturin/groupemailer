@@ -13,6 +13,7 @@ namespace verturin\groupemailer\cron\task;
 class send_queue extends \phpbb\cron\task\base
 {
 	protected $config;
+	protected $config_text;
 	protected $db;
 	protected $user;
 	protected $group_helper;
@@ -25,9 +26,10 @@ class send_queue extends \phpbb\cron\task\base
 	protected $queue_table;
 	protected $bounces_table;
 
-	public function __construct(\phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\user $user, \phpbb\group\helper $group_helper, $table_prefix, $root_path, $php_ext)
+	public function __construct(\phpbb\config\config $config, \phpbb\config\db_text $config_text, \phpbb\db\driver\driver_interface $db, \phpbb\user $user, \phpbb\group\helper $group_helper, $table_prefix, $root_path, $php_ext)
 	{
 		$this->config = $config;
+		$this->config_text = $config_text;
 		$this->db = $db;
 		$this->user = $user;
 		$this->group_helper = $group_helper;
@@ -105,8 +107,8 @@ class send_queue extends \phpbb\cron\task\base
 			include($this->root_path . 'includes/functions_messenger.' . $this->php_ext);
 		}
 
-		$header = (string) $this->config['groupemailer_header'];
-		$footer = (string) $this->config['groupemailer_footer'];
+		$header = (string) $this->config_text->get('groupemailer_header');
+		$footer = (string) $this->config_text->get('groupemailer_footer');
 		$from_name = $this->config['groupemailer_from_name'] !== '' ? $this->config['groupemailer_from_name'] : $this->config['sitename'];
 		$from_email = $this->config['groupemailer_from_email'] !== '' ? $this->config['groupemailer_from_email'] : $this->config['board_contact'];
 
@@ -192,8 +194,8 @@ class send_queue extends \phpbb\cron\task\base
 
 		$from_name = $this->config['groupemailer_from_name'] !== '' ? $this->config['groupemailer_from_name'] : $this->config['sitename'];
 		$from_email = $this->config['groupemailer_from_email'] !== '' ? $this->config['groupemailer_from_email'] : $this->config['board_contact'];
-		$header = (string) $this->config['groupemailer_header'];
-		$footer = (string) $this->config['groupemailer_footer'];
+		$header = (string) $this->config_text->get('groupemailer_header');
+		$footer = (string) $this->config_text->get('groupemailer_footer');
 
 		$sent = 0;
 		$errors = 0;
@@ -463,6 +465,169 @@ class send_queue extends \phpbb\cron\task\base
 		$sql = 'DELETE FROM ' . $this->bounces_table . '
 			WHERE user_id = ' . (int) $user_id;
 		$this->db->sql_query($sql);
+	}
+
+	/**
+	 * Accusé de désabonnement au membre, et copie à l'administrateur désigné.
+	 * Appelée depuis la page publique de désabonnement comme depuis l'ACP,
+	 * lors d'un renvoi.
+	 */
+	public function send_unsub_notifications($row, $time, $to_admin = true)
+	{
+		if (!class_exists('messenger'))
+		{
+			$file = $this->root_path . 'includes/functions_messenger.' . $this->php_ext;
+
+			if (!file_exists($file))
+			{
+				return false;
+			}
+
+			include($file);
+		}
+
+		$sent = false;
+		$lang = $this->resolve_lang(isset($row['user_lang']) ? $row['user_lang'] : '');
+		$date = $this->user->format_date((int) $time);
+
+		if (!empty($this->config['groupemailer_unsub_confirm']) && $row['email'] !== '')
+		{
+			$messenger = new \messenger(false);
+			$messenger->template('groupemailer_unsub_user', $lang, $this->template_path($lang));
+			$messenger->to($row['email'], $row['username']);
+			$messenger->from($this->sender_email(), $this->sender_name());
+			$messenger->subject($this->tr($lang, 'GROUPEMAILER_UNSUB_MAIL_SUBJECT'));
+			$messenger->assign_vars(array(
+				'MESSAGE'	=> $this->unsub_message($lang, $row, $date),
+			));
+			$sent = (bool) $messenger->send(NOTIFY_EMAIL);
+		}
+
+		if (!$to_admin)
+		{
+			return $sent;
+		}
+
+		$admin_id = (int) $this->config['groupemailer_unsub_notify_id'];
+
+		if (!$admin_id)
+		{
+			return $sent;
+		}
+
+		$sql = 'SELECT user_id, username, user_email, user_lang
+			FROM ' . USERS_TABLE . '
+			WHERE user_id = ' . $admin_id;
+		$result = $this->db->sql_query($sql);
+		$admin = $this->db->sql_fetchrow($result);
+		$this->db->sql_freeresult($result);
+
+		if (!$admin)
+		{
+			return $sent;
+		}
+
+		$admin_lang = $this->resolve_lang($admin['user_lang']);
+
+		if (!empty($this->config['groupemailer_unsub_notify_email']) && $admin['user_email'] !== '')
+		{
+			$messenger = new \messenger(false);
+			$messenger->template('groupemailer_unsub_admin', $admin_lang, $this->template_path($admin_lang));
+			$messenger->to($admin['user_email'], $admin['username']);
+			$messenger->from($this->sender_email(), $this->sender_name());
+			$messenger->assign_vars(array(
+				'USERNAME'		=> $row['username'],
+				'EMAIL'			=> $row['email'],
+				'UNSUB_DATE'	=> $date,
+				'CAMPAIGN'		=> isset($row['title']) ? $row['title'] : '',
+			));
+			$messenger->send(NOTIFY_EMAIL);
+		}
+
+		if (!empty($this->config['groupemailer_unsub_notify_pm']))
+		{
+			$this->send_admin_pm($admin, $row, $date, $admin_lang);
+		}
+
+		return $sent;
+	}
+
+	/**
+	 * Corps de l'accusé : texte personnalisé s'il est renseigné dans les
+	 * réglages, texte par défaut de la langue sinon.
+	 */
+	protected function unsub_message($lang, $row, $date)
+	{
+		$custom = trim((string) $this->config_text->get('groupemailer_unsub_text'));
+		$text = ($custom !== '') ? $custom : $this->tr($lang, 'GROUPEMAILER_UNSUB_MAIL_DEFAULT');
+
+		return str_replace(
+			array('{USERNAME}', '{SITENAME}', '{UNSUB_DATE}', '{U_PREFS}'),
+			array($row['username'], (string) $this->config['sitename'], $date, $this->get_prefs_url()),
+			$text
+		);
+	}
+
+	/**
+	 * Message privé adressé à l'administrateur désigné
+	 */
+	protected function send_admin_pm($admin, $row, $date, $lang)
+	{
+		foreach (array('functions_posting', 'functions_privmsgs') as $inc)
+		{
+			$file = $this->root_path . 'includes/' . $inc . '.' . $this->php_ext;
+
+			if (file_exists($file))
+			{
+				include_once($file);
+			}
+		}
+
+		if (!function_exists('submit_pm') || !function_exists('generate_text_for_storage'))
+		{
+			return;
+		}
+
+		$body = $this->tr(
+			$lang,
+			'GROUPEMAILER_UNSUB_PM_BODY',
+			$row['username'],
+			$row['email'],
+			$date,
+			isset($row['title']) ? $row['title'] : ''
+		);
+
+		$uid = $bitfield = $options = '';
+		generate_text_for_storage($body, $uid, $bitfield, $options, false, false, false);
+
+		// Notification interne : elle est déposée dans la boîte de
+		// l'administrateur, à son propre nom.
+		$data = array(
+			'from_user_id'		=> (int) $admin['user_id'],
+			'from_user_ip'		=> '127.0.0.1',
+			'from_username'		=> $admin['username'],
+			'enable_sig'		=> false,
+			'enable_bbcode'		=> false,
+			'enable_smilies'	=> false,
+			'enable_urls'		=> false,
+			'icon_id'			=> 0,
+			'bbcode_bitfield'	=> $bitfield,
+			'bbcode_uid'		=> $uid,
+			'message'			=> $body,
+			'address_list'		=> array('u' => array((int) $admin['user_id'] => 'to')),
+		);
+
+		submit_pm('post', $this->tr($lang, 'GROUPEMAILER_UNSUB_PM_SUBJECT'), $data, false);
+	}
+
+	protected function sender_name()
+	{
+		return $this->config['groupemailer_from_name'] !== '' ? $this->config['groupemailer_from_name'] : $this->config['sitename'];
+	}
+
+	protected function sender_email()
+	{
+		return $this->config['groupemailer_from_email'] !== '' ? $this->config['groupemailer_from_email'] : $this->config['board_contact'];
 	}
 
 	/**

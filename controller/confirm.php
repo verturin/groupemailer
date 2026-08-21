@@ -13,6 +13,8 @@ namespace verturin\groupemailer\controller;
 class confirm
 {
 	protected $config;
+	protected $config_text;
+	protected $mailer;
 	protected $db;
 	protected $template;
 	protected $user;
@@ -22,9 +24,11 @@ class confirm
 	protected $campaigns_table;
 	protected $queue_table;
 
-	public function __construct(\phpbb\config\config $config, \phpbb\db\driver\driver_interface $db, \phpbb\template\template $template, \phpbb\user $user, \phpbb\controller\helper $helper, $table_prefix, $root_path, $php_ext)
+	public function __construct(\phpbb\config\config $config, \phpbb\config\db_text $config_text, \verturin\groupemailer\cron\task\send_queue $mailer, \phpbb\db\driver\driver_interface $db, \phpbb\template\template $template, \phpbb\user $user, \phpbb\controller\helper $helper, $table_prefix, $root_path, $php_ext)
 	{
 		$this->config = $config;
+		$this->config_text = $config_text;
+		$this->mailer = $mailer;
 		$this->db = $db;
 		$this->template = $template;
 		$this->user = $user;
@@ -73,9 +77,10 @@ class confirm
 	{
 		$this->user->add_lang_ext('verturin/groupemailer', 'common');
 
-		$sql = 'SELECT queue_id, user_id, username
-			FROM ' . $this->queue_table . "
-			WHERE confirm_token = '" . $this->db->sql_escape($token) . "'";
+		$sql = 'SELECT q.queue_id, q.user_id, q.username, q.email, q.user_lang, c.title
+			FROM ' . $this->queue_table . ' q, ' . $this->campaigns_table . " c
+			WHERE q.campaign_id = c.campaign_id
+				AND q.confirm_token = '" . $this->db->sql_escape($token) . "'";
 		$result = $this->db->sql_query($sql);
 		$row = $this->db->sql_fetchrow($result);
 		$this->db->sql_freeresult($result);
@@ -92,10 +97,25 @@ class confirm
 			WHERE user_id = ' . (int) $row['user_id'];
 		$this->db->sql_query($sql);
 
+		$now = time();
+
 		$sql = 'UPDATE ' . $this->queue_table . '
-			SET unsubscribed_time = ' . ($allow ? 0 : time()) . '
+			SET unsubscribed_time = ' . ($allow ? 0 : $now) . '
 			WHERE queue_id = ' . (int) $row['queue_id'];
 		$this->db->sql_query($sql);
+
+		if (!$allow)
+		{
+			// Le désabonnement est déjà enregistré : un échec d'envoi
+			// des accusés ne doit jamais le remettre en cause.
+			try
+			{
+				$this->mailer->send_unsub_notifications($row, $now);
+			}
+			catch (\Throwable $e)
+			{
+			}
+		}
 
 		$this->template->assign_vars(array(
 			'S_INVALID'			=> false,
@@ -147,8 +167,8 @@ class confirm
 		}
 
 		// Contenu identique à celui de l'email, sans le bloc du lien
-		$header = (string) $this->config['groupemailer_header'];
-		$footer = (string) $this->config['groupemailer_footer'];
+		$header = (string) $this->config_text->get('groupemailer_header');
+		$footer = (string) $this->config_text->get('groupemailer_footer');
 
 		$message = ($header !== '' ? $header . "\n\n" : '')
 			. $row['body']

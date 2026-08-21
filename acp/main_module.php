@@ -18,6 +18,7 @@ class main_module
 
 	protected $db;
 	protected $config;
+	protected $config_text;
 	protected $request;
 	protected $template;
 	protected $user;
@@ -41,6 +42,7 @@ class main_module
 		$this->group_helper = $phpbb_container->get('group_helper');
 		$this->table_prefix = $phpbb_container->getParameter('core.table_prefix');
 		$this->php_ext = $phpbb_container->getParameter('core.php_ext');
+		$this->config_text = $phpbb_container->get('config_text');
 		$this->root_path = $phpbb_container->getParameter('core.root_path');
 		$this->campaigns_table = $this->table_prefix . 'groupemailer_campaigns';
 		$this->queue_table = $this->table_prefix . 'groupemailer_queue';
@@ -80,6 +82,12 @@ class main_module
 				$this->backup();
 				break;
 
+			case 'unsubscribes':
+				$this->page_title = 'ACP_GROUPEMAILER_UNSUBS';
+				$this->tpl_name = 'acp_groupemailer_unsubs';
+				$this->unsubscribes();
+				break;
+
 			case 'history':
 				$this->page_title = 'ACP_GROUPEMAILER_HISTORY';
 				$this->tpl_name = 'acp_groupemailer_history';
@@ -98,7 +106,7 @@ class main_module
 
 		// Les actions qui modifient l'état sont protégées par un jeton de lien,
 		// mécanisme standard de phpBB pour les liens d'action en GET.
-		$guarded = array('start', 'pause', 'resume', 'cancel', 'relance', 'duplicate', 'unschedule', 'reset_bounce', 'retry_errors', 'send_now', 'resend_all', 'resend_unconfirmed', 'resend_one', 'send_test');
+		$guarded = array('start', 'pause', 'resume', 'cancel', 'relance', 'duplicate', 'unschedule', 'resubscribe', 'resend_unsub', 'reset_bounce', 'retry_errors', 'send_now', 'resend_all', 'resend_unconfirmed', 'resend_one', 'send_test');
 
 		if (in_array($action, $guarded, true) && !check_link_hash($this->request->variable('hash', ''), 'gm_' . $action))
 		{
@@ -497,6 +505,7 @@ class main_module
 		$ex_deactivated = $ex_inactive = $ex_massemail = 0;
 		$ex_bounced = 0;
 		$ex_confirmed_elsewhere = 0;
+		$ex_left_group = 0;
 
 		if ($parent_id > 0)
 		{
@@ -533,6 +542,28 @@ class main_module
 			}
 			$this->db->sql_freeresult($result);
 
+			// Les membres ayant quitté les groupes visés ne sont pas relancés,
+			// mais restent dans le tableau de suivi pour ne pas fausser les
+			// statistiques de la campagne d'origine.
+			$still_member = null;
+			$origin_groups = array_filter(array_map('intval', explode(',', (string) $campaign['target_groups'])));
+
+			if ($origin_groups)
+			{
+				$still_member = array();
+
+				$sql = 'SELECT DISTINCT user_id
+					FROM ' . USER_GROUP_TABLE . '
+					WHERE ' . $this->db->sql_in_set('group_id', $origin_groups) . '
+						AND user_pending = 0';
+				$result = $this->db->sql_query($sql);
+				while ($row = $this->db->sql_fetchrow($result))
+				{
+					$still_member[(int) $row['user_id']] = true;
+				}
+				$this->db->sql_freeresult($result);
+			}
+
 			// Relance : uniquement les destinataires de la campagne d'origine
 			// qui ont bien reçu le mail mais ne l'ont pas confirmé.
 			$sql = 'SELECT user_id, username, email, user_lang
@@ -550,12 +581,20 @@ class main_module
 					continue;
 				}
 
+				// Sorti des groupes visés : consigné sans être renvoyé
+				$left = ($still_member !== null && !isset($still_member[(int) $row['user_id']]));
+
+				if ($left)
+				{
+					$ex_left_group++;
+				}
+
 				$recipients[] = array(
 					'campaign_id'	=> (int) $campaign_id,
 					'user_id'		=> (int) $row['user_id'],
 					'username'		=> $row['username'],
 					'email'			=> $row['email'],
-					'status'		=> 'pending',
+					'status'		=> $left ? 'left_group' : 'pending',
 					'confirm_token'	=> $this->generate_token(),
 					'user_lang'		=> (string) $row['user_lang'],
 				);
@@ -700,20 +739,29 @@ class main_module
 		$sql_ary = array(
 			'status'			=> $is_scheduled ? 'scheduled' : 'running',
 			'started_time'		=> time(),
-			'total_recipients'	=> count($recipients),
+			'total_recipients'	=> max(0, count($recipients) - $ex_left_group),
 		);
 		$sql = 'UPDATE ' . $this->campaigns_table . '
 			SET ' . $this->db->sql_build_array('UPDATE', $sql_ary) . '
 			WHERE campaign_id = ' . (int) $campaign_id;
 		$this->db->sql_query($sql);
 
+		// Les membres sortis des groupes figurent dans la file sans être
+		// envoyés : ils ne comptent donc pas comme destinataires.
+		$nb_to_send = max(0, count($recipients) - $ex_left_group);
+
 		$msg_start = $is_scheduled
-			? $this->user->lang('GROUPEMAILER_CAMPAIGN_SCHEDULED', count($recipients), $this->user->format_date($scheduled))
-			: $this->user->lang('GROUPEMAILER_CAMPAIGN_STARTED', count($recipients));
+			? $this->user->lang('GROUPEMAILER_CAMPAIGN_SCHEDULED', $nb_to_send, $this->user->format_date($scheduled))
+			: $this->user->lang('GROUPEMAILER_CAMPAIGN_STARTED', $nb_to_send);
 
 		if (!empty($ex_confirmed_elsewhere))
 		{
 			$msg_start .= '<br>' . $this->user->lang('GROUPEMAILER_EXCLUDED_CONFIRMED', (int) $ex_confirmed_elsewhere);
+		}
+
+		if (!empty($ex_left_group))
+		{
+			$msg_start .= '<br>' . $this->user->lang('GROUPEMAILER_EXCLUDED_LEFT_GROUP', (int) $ex_left_group);
 		}
 
 		if (!empty($excluded))
@@ -836,11 +884,12 @@ class main_module
 				'CONFIRMED_TIME'	=> $confirmed ? $this->user->format_date((int) $row['confirmed_time']) : '',
 				'S_UNSUBSCRIBED'	=> ((int) $row['unsubscribed_time'] > 0),
 				'UNSUBSCRIBED_TIME'	=> (int) $row['unsubscribed_time'] > 0 ? $this->user->format_date((int) $row['unsubscribed_time']) : '',
+				'S_LEFT_GROUP'	=> ($row['status'] === 'left_group'),
 				'S_BOUNCED'		=> isset($bounced[(int) $row['user_id']]),
 				'FAIL_COUNT'	=> isset($bounced[(int) $row['user_id']]) ? (int) $bounced[(int) $row['user_id']]['fail_count'] : 0,
 				'U_RESET_BOUNCE'	=> $this->u_action . "&amp;action=reset_bounce&amp;campaign_id={$campaign_id}&amp;user_id=" . (int) $row['user_id'] . '&amp;hash=' . generate_link_hash('gm_reset_bounce'),
 
-				'S_PENDING'		=> ($row['status'] === 'pending'),
+				'S_PENDING'		=> in_array($row['status'], array('pending', 'left_group'), true),
 				'S_ERROR'		=> ($row['status'] === 'error'),
 				'S_CONFIRMED'	=> $confirmed,
 
@@ -1070,6 +1119,7 @@ class main_module
 			'scheduled'	=> 'background:#e8e4f3;color:#5b4a8a;',
 			'completed'	=> 'background:#dff0d8;color:#3c763d;',
 			'cancelled'	=> 'background:#eee;color:#777;text-decoration:line-through;',
+			'left_group'	=> 'background:#fdf0e3;color:#8a5a2b;',
 			'sent'		=> 'background:#dff0d8;color:#3c763d;',
 			'pending'	=> 'background:#e8e8e8;color:#555;',
 			'error'		=> 'background:#f2dede;color:#a94442;',
@@ -1122,7 +1172,7 @@ class main_module
 			'title'				=> $this->user->lang('GROUPEMAILER_RELANCE_TITLE', $campaign['title']),
 			'subject'			=> $campaign['subject'],
 			'body'				=> $campaign['body'],
-			'target_groups'		=> '',
+			'target_groups'		=> $campaign['target_groups'],
 			'rate_count'		=> (int) $campaign['rate_count'],
 			'rate_interval'		=> (int) $campaign['rate_interval'],
 			'require_confirm'	=> 1,
@@ -1414,6 +1464,42 @@ class main_module
 			'ok'
 		);
 
+		$notify_id = (int) $this->config['groupemailer_unsub_notify_id'];
+		$notify_name = '';
+
+		if ($notify_id)
+		{
+			$sql = 'SELECT username, user_email FROM ' . USERS_TABLE . '
+				WHERE user_id = ' . $notify_id;
+			$result = $this->db->sql_query($sql);
+			$notify_row = $this->db->sql_fetchrow($result);
+			$this->db->sql_freeresult($result);
+
+			if ($notify_row)
+			{
+				$modes = array();
+
+				if (!empty($this->config['groupemailer_unsub_notify_email']))
+				{
+					$modes[] = $this->user->lang('GROUPEMAILER_UNSUB_NOTIFY_BY_EMAIL');
+				}
+
+				if (!empty($this->config['groupemailer_unsub_notify_pm']))
+				{
+					$modes[] = $this->user->lang('GROUPEMAILER_UNSUB_NOTIFY_BY_PM');
+				}
+
+				$notify_name = $notify_row['username'] . ' <' . $notify_row['user_email'] . '> — '
+					. ($modes ? implode(', ', $modes) : $this->user->lang('GROUPEMAILER_DIAG_UNSUB_NO_MODE'));
+			}
+		}
+
+		$line(
+			$this->user->lang('GROUPEMAILER_DIAG_UNSUB_NOTIFY'),
+			$notify_name !== '' ? $notify_name : $this->user->lang('GROUPEMAILER_DIAG_UNSUB_NOBODY'),
+			$notify_name !== '' ? 'ok' : 'warn'
+		);
+
 		$line(
 			$this->user->lang('GROUPEMAILER_DIAG_LIST_UNSUB'),
 			!empty($this->config['groupemailer_list_unsubscribe'])
@@ -1458,7 +1544,7 @@ class main_module
 		$line($this->user->lang('GROUPEMAILER_DIAG_LINK'), $sample, 'ok');
 
 		$this->template->assign_vars(array(
-			'GROUPEMAILER_VERSION'	=> '2.29.1',
+			'GROUPEMAILER_VERSION'	=> '2.33.1',
 			'U_CRON_DIRECT'	=> generate_board_url() . '/app.php/cron/verturin.groupemailer.cron.task.send_queue',
 		));
 	}
@@ -1539,6 +1625,7 @@ class main_module
 				'CONFIRMED_TIME'	=> (int) $row['confirmed_time'] > 0 ? $this->user->format_date((int) $row['confirmed_time']) : '',
 				'S_UNSUBSCRIBED'	=> ((int) $row['unsubscribed_time'] > 0),
 				'UNSUBSCRIBED_TIME'	=> (int) $row['unsubscribed_time'] > 0 ? $this->user->format_date((int) $row['unsubscribed_time']) : '',
+				'S_LEFT_GROUP'	=> ($row['status'] === 'left_group'),
 				'S_BOUNCED'		=> isset($bounced[(int) $row['user_id']]),
 				'FAIL_COUNT'	=> isset($bounced[(int) $row['user_id']]) ? (int) $bounced[(int) $row['user_id']]['fail_count'] : 0,
 				'U_RESET_BOUNCE'	=> $this->u_action . '&amp;action=reset_bounce&amp;user_id=' . (int) $row['user_id'] . '&amp;hash=' . generate_link_hash('gm_reset_bounce'),
@@ -1950,6 +2037,204 @@ class main_module
 	}
 
 	/**
+	 * Administrateurs susceptibles de recevoir les notifications :
+	 * fondateurs et membres du groupe Administrateurs.
+	 */
+	protected function assign_admin_list($selected)
+	{
+		$sql = 'SELECT DISTINCT u.user_id, u.username, u.user_email
+			FROM ' . USERS_TABLE . ' u
+			LEFT JOIN ' . USER_GROUP_TABLE . ' ug ON (ug.user_id = u.user_id)
+			LEFT JOIN ' . GROUPS_TABLE . " g ON (g.group_id = ug.group_id)
+				WHERE u.user_type = " . USER_FOUNDER . "
+					OR (g.group_name = 'ADMINISTRATORS' AND ug.user_pending = 0)
+			ORDER BY u.username ASC";
+		$result = $this->db->sql_query($sql);
+
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$this->template->assign_block_vars('admins', array(
+				'USER_ID'		=> (int) $row['user_id'],
+				'USERNAME'		=> $row['username'],
+				'S_NO_EMAIL'	=> ($row['user_email'] === ''),
+				'S_SELECTED'	=> ((int) $row['user_id'] === (int) $selected),
+			));
+		}
+		$this->db->sql_freeresult($result);
+	}
+
+	/**
+	 * Membres désabonnés à la suite d'un envoi : qui, quand, et depuis quelle
+	 * campagne. Le réabonnement se fait sur simple demande du membre.
+	 */
+	protected function unsubscribes()
+	{
+		$sub_action = $this->request->variable('action', '');
+
+		if ($sub_action === 'resubscribe')
+		{
+			$this->resubscribe_user($this->request->variable('user_id', 0));
+			return;
+		}
+
+		if ($sub_action === 'resend_unsub')
+		{
+			$this->resend_unsub_confirmation($this->request->variable('queue_id', 0));
+			return;
+		}
+
+		$start = max(0, $this->request->variable('start', 0));
+		$per_page = 50;
+
+		$sort_key = $this->request->variable('sk', 'd');
+		$sort_dir = $this->request->variable('sd', 'd') === 'a' ? 'ASC' : 'DESC';
+
+		$sort_map = array(
+			'd' => 'q.unsubscribed_time',
+			'u' => 'q.username',
+			't' => 'c.title',
+		);
+		$order_by = isset($sort_map[$sort_key]) ? $sort_map[$sort_key] : $sort_map['d'];
+
+		// Un membre peut s'être désabonné depuis plusieurs campagnes : seul
+		// son désabonnement le plus récent est listé.
+		$sql = 'SELECT COUNT(DISTINCT user_id) AS total
+			FROM ' . $this->queue_table . '
+			WHERE unsubscribed_time > 0';
+		$result = $this->db->sql_query($sql);
+		$total = (int) $this->db->sql_fetchfield('total');
+		$this->db->sql_freeresult($result);
+
+		$sql = 'SELECT q.queue_id, q.user_id, q.username, q.email, q.unsubscribed_time, q.unsub_resent_time, c.title, c.campaign_id
+			FROM ' . $this->queue_table . ' q, ' . $this->campaigns_table . ' c
+			WHERE q.campaign_id = c.campaign_id
+				AND q.unsubscribed_time > 0
+			ORDER BY ' . $order_by . ' ' . $sort_dir;
+		$result = $this->db->sql_query_limit($sql, $per_page * 4, $start);
+
+		$rows = array();
+		while ($row = $this->db->sql_fetchrow($result))
+		{
+			$uid = (int) $row['user_id'];
+
+			// Une seule ligne par membre, celle du désabonnement le plus récent
+			if (!isset($rows[$uid]) || (int) $row['unsubscribed_time'] > (int) $rows[$uid]['unsubscribed_time'])
+			{
+				$rows[$uid] = $row;
+			}
+		}
+		$this->db->sql_freeresult($result);
+
+		$rows = array_slice($rows, 0, $per_page, true);
+		$colours = $this->user_colours(array_keys($rows));
+
+		// Les membres réabonnés depuis leur profil apparaissent différemment
+		$allow = array();
+
+		if ($rows)
+		{
+			$sql = 'SELECT user_id, user_allow_massemail
+				FROM ' . USERS_TABLE . '
+				WHERE ' . $this->db->sql_in_set('user_id', array_keys($rows));
+			$result = $this->db->sql_query($sql);
+			while ($row = $this->db->sql_fetchrow($result))
+			{
+				$allow[(int) $row['user_id']] = (int) $row['user_allow_massemail'];
+			}
+			$this->db->sql_freeresult($result);
+		}
+
+		foreach ($rows as $uid => $row)
+		{
+			$this->template->assign_block_vars('unsubs', array(
+				'USERNAME'		=> $this->username_html($uid, $row['username'], isset($colours[$uid]) ? $colours[$uid] : ''),
+				'EMAIL'			=> $row['email'],
+				'CAMPAIGN'		=> $row['title'],
+				'UNSUB_TIME'	=> $this->user->format_date((int) $row['unsubscribed_time']),
+				'S_RESUBSCRIBED'	=> !empty($allow[$uid]),
+				'U_DETAILS'		=> $this->u_action_campaigns() . '&amp;action=details&amp;campaign_id=' . (int) $row['campaign_id'],
+				'U_RESUBSCRIBE'	=> $this->u_action . '&amp;action=resubscribe&amp;user_id=' . $uid . '&amp;hash=' . generate_link_hash('gm_resubscribe'),
+				'U_RESEND'		=> $this->u_action . '&amp;action=resend_unsub&amp;queue_id=' . (int) $row['queue_id'] . '&amp;hash=' . generate_link_hash('gm_resend_unsub'),
+				'RESENT_TIME'	=> (int) $row['unsub_resent_time'] > 0 ? $this->user->format_date((int) $row['unsub_resent_time']) : '',
+			));
+		}
+
+		$base = $this->u_action . '&amp;sk=' . $sort_key . '&amp;sd=' . ($sort_dir === 'ASC' ? 'a' : 'd');
+		$this->build_pagination($base, $total, $per_page, $start);
+		$this->assign_sort_urls($this->u_action, $sort_key, $sort_dir, array('d', 'u', 't'));
+
+		$this->template->assign_vars(array(
+			'NB_UNSUBS'	=> $total,
+		));
+	}
+
+	/**
+	 * Renvoie l'accusé de désabonnement à un membre, et mémorise la date
+	 * de ce renvoi.
+	 */
+	protected function resend_unsub_confirmation($queue_id)
+	{
+		global $phpbb_container;
+
+		if (!$queue_id)
+		{
+			trigger_error($this->user->lang('GROUPEMAILER_BOUNCE_NOT_FOUND') . adm_back_link($this->u_action), E_USER_WARNING);
+		}
+
+		$sql = 'SELECT q.queue_id, q.user_id, q.username, q.email, q.user_lang, q.unsubscribed_time, c.title
+			FROM ' . $this->queue_table . ' q, ' . $this->campaigns_table . '  c
+			WHERE q.campaign_id = c.campaign_id
+				AND q.queue_id = ' . (int) $queue_id;
+		$result = $this->db->sql_query($sql);
+		$row = $this->db->sql_fetchrow($result);
+		$this->db->sql_freeresult($result);
+
+		if (!$row || !(int) $row['unsubscribed_time'])
+		{
+			trigger_error($this->user->lang('GROUPEMAILER_BOUNCE_NOT_FOUND') . adm_back_link($this->u_action), E_USER_WARNING);
+		}
+
+		$task = $phpbb_container->get('verturin.groupemailer.cron.task.send_queue');
+
+		// L'accusé reprend la date du désabonnement, non celle du renvoi :
+		// c'est bien la première qui fait foi pour le membre. La copie à
+		// l'administrateur suit, comme lors du désabonnement initial.
+		$sent = $task->send_unsub_notifications($row, (int) $row['unsubscribed_time'], true);
+
+		if (!$sent)
+		{
+			trigger_error($this->user->lang('GROUPEMAILER_UNSUB_RESEND_FAILED') . adm_back_link($this->u_action), E_USER_WARNING);
+		}
+
+		$now = time();
+
+		$sql = 'UPDATE ' . $this->queue_table . '
+			SET unsub_resent_time = ' . $now . '
+			WHERE queue_id = ' . (int) $queue_id;
+		$this->db->sql_query($sql);
+
+		trigger_error($this->user->lang('GROUPEMAILER_UNSUB_RESEND_DONE', $row['email'], $this->user->format_date($now)) . adm_back_link($this->u_action));
+	}
+
+	/**
+	 * Réabonne un membre depuis l'ACP, à sa demande
+	 */
+	protected function resubscribe_user($user_id)
+	{
+		if (!$user_id)
+		{
+			trigger_error($this->user->lang('GROUPEMAILER_BOUNCE_NOT_FOUND') . adm_back_link($this->u_action), E_USER_WARNING);
+		}
+
+		$sql = 'UPDATE ' . USERS_TABLE . '
+			SET user_allow_massemail = 1
+			WHERE user_id = ' . (int) $user_id;
+		$this->db->sql_query($sql);
+
+		trigger_error($this->user->lang('GROUPEMAILER_RESUB_ADMIN_DONE') . adm_back_link($this->u_action));
+	}
+
+	/**
 	 * Sauvegarde et restauration des campagnes.
 	 * L'export produit un fichier JSON contenant les campagnes et, au choix,
 	 * la file d'attente correspondante (destinataires, statuts d'envoi et
@@ -2259,15 +2544,24 @@ class main_module
 			$this->config->set('groupemailer_default_rate_interval', max(1, $this->request->variable('groupemailer_default_rate_interval', 10)));
 			$this->config->set('groupemailer_from_name', $this->request->variable('groupemailer_from_name', '', true));
 			$this->config->set('groupemailer_from_email', $this->request->variable('groupemailer_from_email', '', true));
-			$this->config->set('groupemailer_header', $this->request->variable('groupemailer_header', '', true));
-			$this->config->set('groupemailer_footer', $this->request->variable('groupemailer_footer', '', true));
+			$this->config_text->set_array(array(
+				'groupemailer_header'	=> $this->request->variable('groupemailer_header', '', true),
+				'groupemailer_footer'	=> $this->request->variable('groupemailer_footer', '', true),
+				'groupemailer_unsub_text'	=> $this->request->variable('groupemailer_unsub_text', '', true),
+			));
 			$this->config->set('groupemailer_default_inactive_days', max(1, $this->request->variable('groupemailer_default_inactive_days', 180)));
 			$this->config->set('groupemailer_add_unsubscribe', $this->request->variable('groupemailer_add_unsubscribe', 0) ? 1 : 0);
 			$this->config->set('groupemailer_list_unsubscribe', $this->request->variable('groupemailer_list_unsubscribe', 0) ? 1 : 0);
 			$this->config->set('groupemailer_bounce_threshold', max(1, $this->request->variable('groupemailer_bounce_threshold', 3)));
+			$this->config->set('groupemailer_unsub_confirm', $this->request->variable('groupemailer_unsub_confirm', 0) ? 1 : 0);
+			$this->config->set('groupemailer_unsub_notify_id', $this->request->variable('groupemailer_unsub_notify_id', 0));
+			$this->config->set('groupemailer_unsub_notify_email', $this->request->variable('groupemailer_unsub_notify_email', 0) ? 1 : 0);
+			$this->config->set('groupemailer_unsub_notify_pm', $this->request->variable('groupemailer_unsub_notify_pm', 0) ? 1 : 0);
 
 			trigger_error($this->user->lang('CONFIG_UPDATED') . adm_back_link($this->u_action));
 		}
+
+		$this->assign_admin_list((int) $this->config['groupemailer_unsub_notify_id']);
 
 		add_form_key('acp_groupemailer');
 
@@ -2276,12 +2570,17 @@ class main_module
 			'GROUPEMAILER_DEFAULT_RATE_INTERVAL'	=> (int) $this->config['groupemailer_default_rate_interval'],
 			'GROUPEMAILER_FROM_NAME'		=> $this->config['groupemailer_from_name'] !== '' ? $this->config['groupemailer_from_name'] : $this->config['sitename'],
 			'GROUPEMAILER_FROM_EMAIL'		=> $this->config['groupemailer_from_email'] !== '' ? $this->config['groupemailer_from_email'] : $this->config['board_contact'],
-			'GROUPEMAILER_HEADER'			=> $this->config['groupemailer_header'],
-			'GROUPEMAILER_FOOTER'			=> $this->config['groupemailer_footer'],
+			'GROUPEMAILER_HEADER'			=> $this->config_text->get('groupemailer_header'),
+			'GROUPEMAILER_FOOTER'			=> $this->config_text->get('groupemailer_footer'),
+			'GROUPEMAILER_UNSUB_TEXT'		=> $this->config_text->get('groupemailer_unsub_text'),
+			'GROUPEMAILER_UNSUB_DEFAULT'	=> $this->user->lang('GROUPEMAILER_UNSUB_MAIL_DEFAULT'),
 			'GROUPEMAILER_DEFAULT_INACTIVE_DAYS'	=> (int) $this->config['groupemailer_default_inactive_days'],
 			'S_ADD_UNSUBSCRIBE'	=> (bool) $this->config['groupemailer_add_unsubscribe'],
 			'S_LIST_UNSUBSCRIBE'	=> (bool) $this->config['groupemailer_list_unsubscribe'],
 			'GROUPEMAILER_BOUNCE_THRESHOLD'	=> max(1, (int) $this->config['groupemailer_bounce_threshold']),
+			'S_UNSUB_CONFIRM'		=> (bool) $this->config['groupemailer_unsub_confirm'],
+			'S_UNSUB_NOTIFY_EMAIL'	=> (bool) $this->config['groupemailer_unsub_notify_email'],
+			'S_UNSUB_NOTIFY_PM'		=> (bool) $this->config['groupemailer_unsub_notify_pm'],
 			'U_ACTION'	=> $this->u_action,
 		));
 	}
