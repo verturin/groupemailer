@@ -17,7 +17,7 @@
         "php": ">=7.2"
     },
     "extra": {
-        "display-name": "Group Mailer",
+        "display-name": "Verturin - Group Mailer",
         "soft-require": {
             "phpbb/phpbb": ">=3.3.14,<3.4.0@dev"
         },
